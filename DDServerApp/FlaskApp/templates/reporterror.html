@@ -1,0 +1,75 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+
+{% block body %}
+<title>Report Error for Trial {{trialannotationset.trial.id}}</title>
+
+<!-- Content -->
+<div id="container">
+    <div id="content">
+        <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Report Error for Trial {{trialannotationset.trial.id}}: {{trialannotationset.trial.brief_title}}.<!-- InstanceEndEditable --></h1>    
+        <h2 onmouseover="" style="cursor: pointer; display:inline-block; color:blue" > <a  href="{{ url_for('show_trial_data', tid=trialannotationset.id)}}">Back to Clinical Trial</a></h2>
+        <br>
+        <h2>Instructions</h2>
+        <p> If you've encountered a problem annotating information for this clinical trial please tell me about it in the Error Description box below.</p>
+        <br>    
+        <h2> Error(s) </h2>
+        <br>
+        <div id="inner_div">
+            <div id="table_div_jscode_errors"></div>
+        </div>
+        <div id="inner_div">
+            <br>
+            <h3> Add Error. </h3>
+            <form role="form" method="POST">
+              <label for="errordescription">Error Description:<input type="textarea" class="form-control" id="errordescription" name="errordescription"></label>
+              <div>
+                  <button type="submit" class="btn btn-default">Add Error</button>
+              </div>
+            </form>
+            <br>
+            <h3> Remove Error. </h3>
+            <form role="form" method="POST">
+              <label for="errortoremove">Error to Remove:<select name="errortoremove" class="form-control input-sm" id="errortoremove" name="errortoremove"> {{currenterrors}}</select></label>
+              <div>
+                  <button type="submit" class="btn btn-default">Remove Error</button>
+              </div>
+            </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.google.com/jsapi" type="text/javascript"></script>
+<script>
+
+function openClose(id) {
+	var labelID = "closer_"+id;
+	var contentID = "expander_"+id;
+	if (document.getElementById(contentID).style.display == "block") { 
+		document.getElementById(contentID).style.display = "none";
+		document.getElementById(labelID).style.display = "block"; 
+	} else {
+		document.getElementById(contentID).style.display = "block";
+		document.getElementById(labelID).style.display = "none";
+	}; 
+}
+
+// alert({{message}});
+
+google.load("visualization", "1", {packages:["table"]});
+
+google.setOnLoadCallback(drawTable);
+function drawTable() {
+	{{errorsTable}}
+	if (jscode_errors_data!={}) {
+    	var jscode_table_errors = new google.visualization.Table(document.getElementById('table_div_jscode_errors'));
+        jscode_table_errors.draw(jscode_errors_data, {showRowNumber: false, allowHtml: true});    
+	}
+	
+}
+
+
+</script>
+<!-- #content--> 
+{% endblock %}

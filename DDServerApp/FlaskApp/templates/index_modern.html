@@ -1,0 +1,29 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block body %}
+<title>Home</title>
+
+<!-- Content -->
+<div id="container">
+{% if not session.username %}
+  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Index<!-- InstanceEndEditable --></h1>
+  <div class="row"> 
+    
+    <!--  #main-content (Center) -->
+    <div id="content" class="col-md-12" role="main"> <!-- InstanceBeginEditable name="content_main" -->
+      <p>Please log in. </p>
+      <!-- InstanceEndEditable --> 
+    </div>
+    <!--  End #main-content (Center) -->
+  </div>
+{% else %}
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>    
+
+  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Welcome {{ session.username }}.<!-- InstanceEndEditable --></h1>
+  
+{% endif %}
+</div>
+<!-- #content--> 
+{% endblock %}

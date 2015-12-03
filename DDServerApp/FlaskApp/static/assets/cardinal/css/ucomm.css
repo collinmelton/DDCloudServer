@@ -1,0 +1,24 @@
+/* University Communication Branding */
+body.nav.ucomm #layout {background: url("../images/body_bg.jpg") 0px 0px repeat-x;}
+body.drawer.ucomm #layout {background: url("../images/body_bg.jpg") 0px 0px repeat-x;}
+body.ucomm #container {border: 0px; padding: 0px;}
+
+body.ucomm #nav {margin: 0px; padding: 0px; min-width: 960px;}
+*html body.ucomm #nav {width: expression((documentElement.clientWidth <960) ? "960px" : "960px" );}
+body.drawer.ucomm #nav {margin: 0px;}
+body.ucomm #nav ul {margin: 0px; border-left: 1px solid #8a887d; width: 960px; height: 24px; background: url("../images/nav_bar_bg.png") 0px 0px repeat-x;}
+body.ucomm.drawer #nav ul {height: 30px;}
+body.ucomm #nav ul li {margin: 0px; padding: 0px; width: 192px; height: 30px;}
+body.drawer.ucomm #nav ul li {margin: 0px; width: 192px; background: url("../images/nav_button_drawer_bg.png") 0px 0px repeat-x;}
+*html body.ucomm #nav ul li {background: url("../images/nav_button_bg.png") 0px 0px repeat-x;}
+body.ucomm #nav ul li a {padding: 3px 10px 2px 10px; height: 19px; background: url("../images/nav_button_bg.jpg") 0px 0px repeat-x; border-right: 1px solid #8a887d; border-bottom: 1px solid #a0926d;}
+body.ucomm #nav ul li a:hover {background: url("../images/nav_button_bg_hover.jpg") 0px 0px repeat-x;}
+
+body.ucomm #nav_drawer {margin: 0px; padding: 0px 0px 6px 0px; border-left: 1px solid #eae9e6; border-right: 1px solid #eae9e6; border-bottom: 1px solid #eae9e6; width: 960px;}
+*html body.ucomm #nav_drawer {margin: -6px 0px 0px 0px; padding: 6px 0px 0px 0px;}
+body.ucomm #nav_drawer ul {padding: 2px 0px 5px 0px;}
+body.ucomm #nav_drawer ul li {width: 172px; padding-right: 20px;}
+*html body.ucomm #nav_drawer ul li {width: 167px; padding-right: 0px;}
+body.ucomm #toggle {position: relative; top: -6px; left: 0px; width: 961px; background: url("../images/nav_thin_bar.png") -1px 0px repeat-x; background-position: left top; padding: 16px 0 0 0;}
+body.ucomm #toggle:hover {background: url("../images/nav_thin_bar_hover.png") 0px 0px repeat-x;}
+body.ucomm #toggle a {display: block; cursor: pointer;}

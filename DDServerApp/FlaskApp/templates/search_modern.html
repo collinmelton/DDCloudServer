@@ -1,0 +1,500 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block body %}
+<title>Trials Search</title>
+
+<script src="https://www.google.com/jsapi" type="text/javascript"></script>
+<link href="/static/assets/select2/select2.min.css" rel="stylesheet" />
+<script src="/static/assets/select2/select2.min.js"></script>
+<script>
+
+    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
+    
+    function openClose(id) {
+        var labelID = "closer_"+id;
+        var contentID = "expander_"+id;
+        if (document.getElementById(contentID).style.display == "block") { 
+            document.getElementById(contentID).style.display = "none";
+            document.getElementById(labelID).style.display = "block"; 
+        } else {
+            document.getElementById(contentID).style.display = "block";
+            document.getElementById(labelID).style.display = "none";
+        }; 
+    }
+    
+    function isEmpty(obj) {
+
+        // null and undefined are "empty"
+        if (obj == null) return true;
+
+        // Assume if it has a length property with a non-zero value
+        // that that property is correct.
+        if (obj.length > 0)    return false;
+        if (obj.length === 0)  return true;
+
+        // Otherwise, does it have any properties of its own?
+        // Note that this doesn't handle
+        // toString and valueOf enumeration bugs in IE < 9
+        for (var key in obj) {
+            if (hasOwnProperty.call(obj, key)) return false;
+        }
+
+        return true;
+    }
+
+    function configureJSSelect() {
+        $(".js-select2-cancer").select2({
+            placeholder: "Select a Cancer",
+            allowClear: false,
+        });
+        $(".js-select2-drug").select2({
+            placeholder: "Select a Drug",
+            allowClear: false    
+        });
+        $(".js-select2-therapy").select2({
+            placeholder: "Select a Therapy",
+            allowClear: false    
+        });
+        $(".js-select2-therapy_genes").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-cnv_gene").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-cnv_chrom").select2({
+            placeholder: "Select a Chromosome",
+            allowClear: false
+        });
+        $(".js-select2-exp_genes").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-mod_genes").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-mut_genes").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-fusion_chrom").select2({
+            placeholder: "Select a Chromosome",
+            allowClear: false
+        });
+        $(".js-select2-fusion_gene").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        });
+        $(".js-select2-purpose").select2({
+            placeholder: "Select a Primary Purpose",
+            allowClear: false
+        });
+        $(".js-select2-classification").select2({
+            placeholder: "Select a Classification Method",
+            allowClear: false
+        });
+        $(".js-select2-model").select2({
+            placeholder: "Select an Intervention Model",
+            allowClear: false
+        });
+        $(".js-select2-masking").select2({
+            placeholder: "Select a Masking Method",
+            allowClear: false
+        });
+        $(".js-select2-allocation").select2({
+            placeholder: "Select a Allocation Method",
+            allowClear: false
+        });
+        $(".js-select2-wildtypestatus_gene").select2({
+            placeholder: "Select a Gene Symbol",
+            allowClear: false
+        })
+    }
+
+    $(document).ready(function() {
+        configureJSSelect();
+    });
+        
+    // some javascript to display variant table
+    google.load("visualization", "1", {packages:["table"]});
+
+    // generic make gviz table function
+    function drawtable(data, elementid, jscode_data) {
+        if (!isEmpty(data)) {
+            // console.log(data);
+            $.each(data.colnames, function(k) {
+                var col = data.colnames[k];
+                var type = col[0];
+                var key = col[1];
+                var name = col[2]; 
+                jscode_data.addColumn(type, name, key);
+            });
+            jscode_data.addRows(data.numrows);
+            var i = 0;
+            $.each(data.rows, function(l) {
+                j=0;
+                var row = data.rows[l];
+                $.each(data.colnames, function(k) {
+                    var col = data.colnames[k];
+                    var type = col[0];
+                    var key = col[1];
+                    var name = col[2]; 
+                    jscode_data.setCell(i, j, row[key]["value"]);
+                    jscode_data.setProperty(i, j, 'style', row[key]["css"]);
+                    j+=1;
+                });
+                i+=1;
+            });
+            jscode_table = new google.visualization.Table(document.getElementById(elementid));
+            jscode_table.draw(jscode_data, {showRowNumber: false, allowHtml: true});
+            return jscode_data, jscode_table;           
+        } else {
+            $("#"+elementid).html("<h2>No Results Found</h2>");
+        }
+    }
+
+    // function to update the forms
+    function updateForm(updates) {
+        // console.log("should update form");
+        console.log(updates);
+        $.each(updates, function(key, value) {
+            // get previously selected value
+            var selectedValue = $('#'+key).val();
+            // update options
+            $('#'+key).html(value);
+            // set previously selected value
+            $('#'+key).val(selectedValue);
+        });
+    }   
+
+    // some javascript to generate gviz datatables for trials from search info
+    function searchTrials() {
+        var formcontents = $('form[name=searchTrialsForm]').children().find('input, select');
+        var tosubmit = {};
+        for (i=0; i<formcontents.length; i++) {
+            tosubmit[formcontents[i].name]=formcontents[i].value;               
+        }
+        var jscode_table;
+        var jscode_data = new google.visualization.DataTable();
+        $.post($SCRIPT_ROOT + '/_trialsearch', tosubmit, function(data) {
+            jscode_data, jscode_table = drawtable(data["info"], 'table_div_jscode', jscode_data);
+            updateForm(data["updates"]);
+        }, "json");
+    }
+    
+    function changeAlterationOptions() {
+        role = $("#inforole").find(":selected").text();
+        if (role!="None") {
+            type = $("#type1").find(":selected").text();
+            $('#alterationtype').val("None");
+            $('div[name=cnvinfo]').hide();
+            $('div[name=expressioninfo]').hide();
+            $('div[name=fusioninfo]').hide();
+            $('div[name=snvindelinfo]').hide();
+            $('div[name=protmodinfo]').hide();
+            $('div[name=therapytargetinfo]').hide();
+            $('div[name=wildtypestatusinfo]').hide();
+            
+            console.log(type);
+            if (type=="Mutation/SNV/INDEL") {
+                $('div[name=snvindelinfo]').show();
+                $('#alterationtype').val("SNVINDEL");
+            } else if (type=="CNV (Copy Number Variant)") {
+                $('div[name=cnvinfo]').show();
+                $('#alterationtype').val("CNV");
+            } else if (type=="RNA/Protein Expression") {
+                $('div[name=expressioninfo]').show();
+                $('#alterationtype').val("Expression");
+            } else if (type=="Fusion/Translocation/Rearrangement") {
+                $('div[name=fusioninfo]').show();
+                $('#alterationtype').val("Fusion");
+            } else if (type=="RNA/Protein Expression (Protein Modification)") {
+                $('div[name=protmodinfo]').show();
+                $('#alterationtype').val("ProteinMod");
+            } else if (type=="Therapeutic Target") {
+                $('div[name=therapytargetinfo]').show();
+                $('#alterationtype').val("TherapeuticTarget");    
+            } else if (type=="Unaltered (wild-type) Status") {
+                $('div[name=wildtypestatusinfo]').show();
+                $('#alterationtype').val("WildtypeStatus");
+            }
+                
+        }
+        
+    }
+
+    function showAlterationInfo() {
+        role = $("#inforole").find(":selected").val();
+        if (role=="None") {
+            $('div[name=therapytargetinfo]').hide();
+            $('div[name=wildtypestatusinfo]').hide();
+            $('div[name=cnvinfo]').hide();
+            $('div[name=expressioninfo]').hide();
+            $('div[name=fusioninfo]').hide();
+            $('div[name=snvindelinfo]').hide();
+            $('div[name=protmodinfo]').hide();
+            $('div[name=alterationsbutton]').hide();
+            $('div[name=othertextboxdiv]').hide();
+            $('div[name=additionalinstruction]').hide();
+        } else {
+            if (role=="Other") {
+                $('div[name=othertextboxdiv]').show();
+            } else {
+                $('div[name=othertextboxdiv]').hide();
+            }
+            if (role=="Studied") {
+                $('#expressiongcategory').hide();
+                $("#expression_selector").val('tobestudied');
+            } else {
+                $('#expressiongcategory').show();
+                $("#expression_selector").val('other');
+            }
+            $('div[name=additionalinstruction]').show();
+            $('div[name=alterationsbutton]').show();
+            changeAlterationOptions();    
+        }
+    }
+
+    $(document).ready(function(){
+        // changeAlterationOptions();
+        showAlterationInfo();
+        $("#type1").change(function(){
+            changeAlterationOptions();
+        });
+        $("#inforole").change(function(){
+            showAlterationInfo();
+        });
+        $("#searchTrialsForm").change(searchTrials); //one("change", searchTrials);
+        searchTrials();
+    });
+    
+    
+ 
+    
+
+    
+</script>
+<!-- Content -->
+<div id="container">
+    <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Trials Search<!-- InstanceEndEditable --></h1>
+    <p>Warning: This search page will only search trials with completed annotations.</p>
+    <br>
+    <div id="fullpage">
+        <div id="right" class="col-md-2">
+            <form role="form" action="javascript:searchTrials();" name="searchTrialsForm" id="searchTrialsForm">
+        
+                <h4>Cancer:</h4> 
+                
+                <div class="form-group">
+                    <select style="width:80%" name="preselectedcancername" class="js-select2-cancer" id="mentioned_cancers"> {{cancer_types}}</select>
+                </div>
+                
+                <h4>Drug:</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-drug" name="preselecteddrugname" id="mentioned_drugs"> {{mentioned_drugs}}</select>
+                </div>
+                
+                <h4>Other Therapy:</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-therapy" name="preselectedtherapyname" id="preselected_therapies"> {{preselected_therapies}}</select>
+                </div>
+
+                <h4>Primary Purpose:</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-purpose" name="purpose" id="purpose"> {{purposes}}</select>
+                </div>
+                
+                <h4>Endpoint Classification:</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-classification" name="classification" id="classification"> {{classifications}}</select>
+                </div>
+                
+                <!-- <h4>Intervention Model</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-model" name="model" id="model"> {{models}}</select>
+                </div>
+                
+                <h4>Masking</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-masking" name="masking" id="masking"> {{maskings}}</select>
+                </div>
+                
+                <h4>Allocation</h4>
+                
+                <div class="form-group">
+                    <select style="width:80%" class="js-select2-allocation" name="allocation" id="allocation"> {{allocations}}</select>
+                </div> -->
+                <h4>Molecular Information</h4>
+                
+                <div class="form-group">
+                    <label>Information Type: 
+                        <select name="type2" id="type1">  
+                            <option value=None>None</option>
+                            <option value=UnalteredStatus>Unaltered (wild-type) Status</option>
+                            <option value=TherapeuticTarget>Therapeutic Target</option>
+                            <option value=CNV>CNV (Copy Number Variant)</option>
+                            <option value=Expression>RNA/Protein Expression</option>
+                            <option value=ProteinMod>RNA/Protein Expression (Protein Modification)</option>
+                            <option value=SNVINDEL>Mutation/SNV/INDEL</option>
+                            <option value=Fusion>Fusion/Translocation/Rearrangement</option>
+                        </select>
+                    </label>    
+                </div>
+                
+                <input type="hidden" id="alterationtype" name="alterationtype" value="none">
+                <div class="form-group">
+                    <label>Role of Information: 
+                        <select name="inforole" id="inforole">  
+                            <option value=Any>Any</option>
+                            <option value=Inclusion>Inclusion Criteria</option>
+                            <option value=Exclusion>Exclusion Criteria</option>
+                            <option value=Studied>Studied in Trial</option>
+                            <option value=Diagnosis>Preexisting Cancer Diagnosis Criteria</option>
+                            <option value=DrugTarget>Mentioned as a Drug Target</option>
+                            <option value=Other>Other</option>
+                        </select>
+                    </label>    
+                </div>
+                       
+        
+                <div name = "snvindelinfo">
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="mut_gene" id="mut_genes" class="js-select2-mut_genes"> {{mut_genes}}</select>
+                    </div>             
+                </div>
+                <div name = "therapytargetinfo">
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="therapytarget_gene" id="therapeutic_target_genes" class="js-select2-therapy_genes"> {{therapeutic_target_genes}}</select>
+                    </div>  
+                </div>
+                <div name = "wildtypestatusinfo">
+                    <label>Gene</label><br>
+                    <select style="width:80%" name="wildtypestatus_genes" id="wildtypestatus_genes" class="js-select2-wildtypestatus_gene"> {{wildtypestatus_genes}}</select>
+                </div>
+                <div name = "fusioninfo">
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="fusion_gene" id="fusion_genes" class="js-select2-fusion_gene"> {{fusion_genes}}</select>
+                        
+                    </div>
+                    <div class="form-group">
+                        <label>Chromosome</label><br>
+                        <select style="width:80%" name="fusion_chrom" id="fusion_chroms" class="js-select2-fusion_chrom"> {{fusion_chroms}}</select>
+                        
+                    </div>  
+                </div>
+                <div name = "protmodinfo">
+                    <script>
+                        function showModOther() {
+                            var isother = $("#modtype").find(":selected").text();
+                            if (isother=="Other") {
+                                $('#modotherdiv').show();
+                            } else {
+                                $('#modotherdiv').hide();
+                            }
+                        }
+                    
+                        $(document).ready(function(){
+                            $("#modtype").change(function(){
+                                showModOther();
+                            });
+                            showModOther();
+                        });
+                    </script>
+                    <div class="form-group">
+                        <label>Modification Type:
+                            <select id="modtype" name="modtype">  
+                                <option value=any>Any</option>
+                                <option value=Other>Other</option>
+                                <option value=phospho>Phospho</option>
+                                <option value=acetyl>Acetyl</option>
+                                <option value=methyl>Methyl</option>
+                                <option value=cleaved>Cleaved</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="mod_gene" id="mod_genes" class="js-select2-mod_genes"> {{mod_genes}}</select>
+                    </div>    
+                    
+                </div>
+                <div name = "expressioninfo">
+                    <div id="expressiongcategory">
+                        <label>Expression Category:
+                            <select id="expression_selector" name="expression_selector">
+                                <option value=any>Any</option>
+                                <option value=other>Other</option>
+                                <option value=tobestudied>To Be Studied</option>
+                                <option value=statusknown>Status Known</option>  
+                                <option value=expressed>Expressed</option>
+                                <option value=notexpressed>Not Expressed</option>
+                                <option value=overexpressed>Overexpressed</option>
+                                <option value=underexpressed>Underexpressed</option>        
+                            </select>
+                       </label>
+                    </div>
+                    <div id="samplesource">
+                        <label>Sample Source:
+                            <select name="sample_source">
+                                <option value=any>Any</option>
+                                <option value=tumorcells>Cellular</option>
+                                <option value=other>Extracellular</option>        
+                            </select>
+                       </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="exp_gene" id="expression_genes" class="js-select2-exp_genes"> {{expression_genes}}</select>
+                    </div>  
+                </div>
+                <div name = "cnvinfo">
+                     <div class="form-group">
+                        <label>Gain or Loss:
+                            <select name="cnvgain/loss">  
+                              <option value=gain>Gain</option>
+                              <option value=loss>Loss</option>  
+                           </select>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Gene</label><br>
+                        <select style="width:80%" name="cnv_gene" id="cnv_genes" class="js-select2-cnv_gene"> {{cnv_genes}}</select>
+                        
+                    </div>
+                    <div class="form-group">
+                        <label>Chromosome</label><br>
+                        <select style="width:80%" name="cnv_chrom" id="cnv_chroms" class="js-select2-cnv_chrom"> {{cnv_chroms}}</select>
+                        
+                    </div>  
+                </div>
+        
+                <!--<button type="submit" class="btn btn-default" name="commit" value="Search">Search</button>-->                  
+            </form>     
+        </div>
+        <div id="left" class="col-md-6">
+            
+            <div>
+                <script src="https://www.google.com/jsapi" type="text/javascript"></script>
+                <div id="table_div_jscode"></div>
+            </div>
+        </div>
+    </div>
+    <!--  End #main-content (Center) -->
+</div>
+<!-- #content--> 
+{% endblock %}

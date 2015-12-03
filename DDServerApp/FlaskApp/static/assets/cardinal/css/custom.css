@@ -1,0 +1,168 @@
+/* Expandable Box CSS */
+
+#topbuttons {
+	margin: 5px;
+}
+
+#fullpage {
+	/*border: 0px solid gray;*/
+	float: left; 
+	margin: 0 0 0 0; 
+	padding: 0% 1%; 
+	width: 100%;/*300px;*/
+	overflow: scroll;
+	display: block;
+	max-height: inherit;	
+}
+
+#upper_left {
+	/*border: 1px solid gray;*/
+	float: left; 
+	margin: 0 0 0 0; 
+	/*padding: 1%; */
+	width: 60%;/*300px;*/
+	overflow: scroll;
+	display: block;
+	max-height: inherit;
+}
+
+#upper_right {
+	display: table;
+	/*border: 1px solid gray;*/
+	/*float: left;*/
+	margin: 0 0 0 0; 
+	padding: 1%; 
+	height: 100%;
+	width: 35%;/*300px;*/ 
+	/*vertical-align: middle;*/
+	/*display: table-cell;*/
+	/*max-height: inherit;*/
+	/*overflow: scroll;*/
+	/*display: block;*/
+}
+
+/*#button {
+	margin 1%;
+}*/
+
+#ur_middle {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+#ur_inner {
+    margin-left: auto;
+    margin-right: auto; 
+}
+
+#left {
+	/*border: 1px solid gray;*/
+	float: left; 
+	margin: 0; 
+	padding: 1%; 
+	width: 60%;
+	height: 80vh;
+	overflow: scroll;
+	display: block;
+	max-height: inherit;
+}
+
+#right {
+	/*border: 1px solid gray;*/
+	float: left;
+	margin: 0; 
+	padding: 1%; 
+	width: 35%;
+	height: 80vh;
+	max-height: inherit;
+	overflow: scroll;
+	display: block;
+}
+
+#middle {
+	border: 1px solid gray;
+	float: left;
+	margin: 0 0 15px 0; 
+	padding: 0 15px; 
+	width: 90%;/*300px;*/ 
+	border: 0;
+	height: 80vh;
+	/*height: 100vh;*/
+	/*height: 700px; 
+	max-height: 700px;*/
+	max-height: inherit;
+	overflow: scroll;
+	display: block;
+}
+
+#inner_div {
+  margin-left:50px; 
+  margin-right:50px;
+}
+
+#expander_add_cancer {
+  margin-left:50px; 
+  margin-right:50px;
+}
+ 
+.hidden-section-container {
+  background-color:rgba(187, 187, 187, 0.93);
+  box-shadow:0 2px 10px rgba(0,0,0,0.2);
+}
+ 
+.sh-section-btn {
+  font-size:18px;
+  color:#fff;
+  text-shadow:1px 1px 0px rgba(0,0,0,0.2);
+  padding:5px 10px;
+  cursor:pointer;
+}
+ 
+.h-section-cont {
+ padding:10px 10px;
+ background-color:#eee;
+ display:none;
+}
+
+.customTblHeaderClass {
+	text-align:center;
+}
+
+/*a different hover css http://jsfiddle.net/i_like_robots/qrXyE/ */
+/*body {
+    padding:30px;
+    font:normal 12px/1.5 Arial, sans-serif;
+}*/
+
+/* Hover tooltips */
+.field-tip {
+    position:relative;
+    cursor:help;
+}
+
+.field-tip .tip-content {
+    position:absolute;
+    top:80px; /* - top padding */
+    right:9999px;
+    width:200px;
+    margin-right:-150px; /* width + left/right padding */
+    padding:10px;
+    color:#333;
+    background:#fff;
+    -webkit-box-shadow:2px 2px 5px #aaa;
+       -moz-box-shadow:2px 2px 5px #aaa;
+            box-shadow:2px 2px 5px #aaa;
+    opacity:1;
+    -webkit-transition:opacity 250ms ease-out;
+       -moz-transition:opacity 250ms ease-out;
+        -ms-transition:opacity 250ms ease-out;
+         -o-transition:opacity 250ms ease-out;
+            transition:opacity 250ms ease-out;
+}
+    
+/* <http://css-tricks.com/snippets/css/css-triangle/> */
+
+.field-tip:hover .tip-content {
+    right:5px;
+    opacity:1;
+}

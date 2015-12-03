@@ -1,0 +1,36 @@
+<!doctype html>
+{% extends "trial_template_modern.html" %}
+
+{% block title %}
+<title>Fix Errors</title>
+{% endblock %}
+
+{% block header %}
+
+<script>
+    function resolveError(eid) {
+        $.post($SCRIPT_ROOT + '/_resolveerror?eid='+eid, {'resolutiondescription':$('#resolutiondescription').val()}, function(data, textStatus) {
+            console.log(data);
+            alert(data["message"]);
+        }, "json");
+    }
+</script>
+<!-- Start #content -->
+<div id="content"> 
+    <div id="fullpage">
+        <div id="fullpage" style="border-color:Gray; border-style: solid;">
+        <!-- Start #center -->
+                <h3>{{error.description}}</h3>
+                <p>&nbsp</p>
+                <label for="text">Description of Resolution:<input type="text" id="resolutiondescription" value="" class="form-control"></label>
+                <p>&nbsp</p>
+                <button onclick="resolveError({{error.id}});" type="button" class="btn btn-success btn-sm" style="background-color:Purple; border-color:Purple;" aria-label="Left Align">
+                    <span class="glyphicon glyphicon-ok" aria-hidden="true">&nbspResolve Error</span>
+                </button>
+                <p>&nbsp</p>    
+            </div>
+        </div>   
+    </div>          
+</div>
+{% endblock %}
+

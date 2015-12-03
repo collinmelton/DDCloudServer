@@ -1,0 +1,64 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block body %}
+<title>Home</title>
+
+<!-- Content -->
+<div id="container">
+
+    <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->About EXACT<!-- InstanceEndEditable --></h1>
+    
+    <h2>General Information</h2>
+    <p>
+        EXACT (EXpert Annotation of Clinical Trials) is a web application that is designed as 
+        a crowd sourcing platform for annotation of cancer clinical trials from 
+        ClinicalTrials.gov. The application provides an interface for users to annotate 
+        Cancer Type, Drugs, and Molecular Information in each clinical trial. Molecular
+        information could be used in the trial either as 
+        enrollment criteria or studied as part of the trial. The intent of this website is
+        to provide detailed annotations in order to enable better tools to both research
+        the current state of personalized medicine in cancer as well as to potentially 
+        enable phsyician and 
+        patient guided searches for clinical trials based on molecular phenotypes. 
+    </p>
+    
+    <p>
+        If you are interested in participating please sign up and start annotating!
+    </p>
+
+    <h2>Ontologies</h2>
+    <p>
+        For diseases we are using the 
+        <a href="http://do-wiki.nubic.northwestern.edu/do-wiki/index.php/Main_Page">
+            Human Disease Ontology
+        </a>
+        .
+    </p>
+    <p>
+        For drugs we are using drug names from  
+        <a href="http://www.drugbank.ca">
+            DrugBank
+        </a> 
+        with additional drug synonyms from
+        <a href="https://pubchem.ncbi.nlm.nih.gov">
+            PubChem
+        </a>
+        .
+    </p> 
+    
+        <p>
+        For genes we are using gene names from  
+        <a href="http://www.genenames.org">
+            HGNC
+        </a> 
+        .
+    </p> 
+        
+
+    <!--  End #main-content (Center) -->
+
+</div>
+<!-- #content--> 
+{% endblock %}

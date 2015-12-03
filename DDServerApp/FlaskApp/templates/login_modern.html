@@ -1,0 +1,43 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+
+{% block body %}
+<title>Home</title>
+
+<!-- Content -->
+<div id="container">
+{% if not session.user %}
+  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Welcome to the DECODE System.<!-- InstanceEndEditable --></h1>
+  <div class="content"> 
+    <!--  #main-content (Center) -->
+    <div id="right" class="col-md-12"> <!-- InstanceBeginEditable name="content_main" -->
+      <h3> Please login or <a href={{url_for('newuser')}}>create a new user</a>. </h3>
+      <form role="form" method="POST" action="">
+        <div class="form-group">
+            <input type="text" name="login" placeholder="User Name">
+        </div>
+        <div class="form-group">
+            <input type="password" name="password" placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-default" name="commit" value="Add Cancer">Login</button>
+      </form>
+      <!-- InstanceEndEditable --> </div>
+    <!--  End #main-content (Center) -->
+  </div>
+{% else %}
+  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Welcome {{ name }}.<!-- InstanceEndEditable --></h1>
+  <div class="row"> 
+    
+    <!--  #main-content (Center) -->
+    <div id="content" class="col-md-12" role="main"> <!-- InstanceBeginEditable name="content_main" -->
+      <p class="lead">You are already logged in. To login to a new user please <a href="{{ url_for('logout') }}">log out</a> first. </p>
+      <!-- InstanceEndEditable --> </div>
+    <!--  End #main-content (Center) -->
+
+{% endif %}
+</div>
+<!-- #content--> 
+{% endblock %}
+
+
+
