@@ -1,29 +1,403 @@
 <!doctype html>
 {% extends "layoutmodern.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
 
 {% block body %}
-<title>Home</title>
+
+<script src="/static/assets/customjs/index.js"></script>
+
+<script>
+
+    
+
+</script>
+
+<title>Workflow Editor</title>
+
+
 
 <!-- Content -->
 <div id="container">
 {% if not session.username %}
-  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Index<!-- InstanceEndEditable --></h1>
-  <div class="row"> 
-    
+  
     <!--  #main-content (Center) -->
     <div id="content" class="col-md-12" role="main"> <!-- InstanceBeginEditable name="content_main" -->
       <p>Please log in. </p>
       <!-- InstanceEndEditable --> 
     </div>
-    <!--  End #main-content (Center) -->
-  </div>
-{% else %}
-  <script type="text/javascript" src="https://www.google.com/jsapi"></script>    
 
-  <h1 class=""><!-- InstanceBeginEditable name="Page Title" -->Welcome {{ session.username }}.<!-- InstanceEndEditable --></h1>
+{% else %}
+    <!-- <script type="text/javascript" src="https://www.google.com/jsapi"></script>     -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-3 col-md-2 sidebar">
+                <ul class="nav nav-sidebar">
+                    <li class="active"><a href="#" id="workflow_click" onclick="toggleView('workflows_section');">Workflows</a></li>
+                    <li><a href="#" id="instance_click" onclick="toggleView('instances_section');">Instances</a></li>
+                    <li><a href="#" id="instance_click" onclick="toggleView('disks_section');">Disks</a></li>
+                    <li><a href="#" id="instance_click" onclick="toggleView('commands_section');">Commands</a></li>
+                    <li><a href="#" id="instance_click" onclick="toggleView('images_section');">Images</a></li>
+                    <li><a href="#" id="instance_click" onclick="toggleView('credentials_section');">Credentials</a></li>
+                </ul>
+            </div>
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <div id="workflows_section">
+                    <h1 class="page-header">Workflows</h1>
+                    <form id="workflows_form">
+                        <h3>Make a New Workflow</h3>
+                        <div class="form-group">
+                            <label for="workflowVarWorkflowsSelect">Workflow Name</label>
+                            <input type="text" class="form-control" id="newWorkflowName" placeholder="Name of New Workflow">
+                        </div>
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>
+                    <br>
+                    <form id="workflow_variable_form">
+                        <h3>Edit workflow variables</h3>
+                        <p class="help-block"> 
+                            Workflow variable names will be substituted for the variable value in instance and disk names, dependencies, and commands. 
+                            This is useful when you want to run different versions of the same workflow template with slight alterations 
+                            (e.g. different runs of the same genomics workflow for different samples). Workflow variables apply to every instance/disk
+                            in the workflow. 
+                        </p> 
+                        <div class="row">
+                            <div class="form-group col-sm-10"  onchange="updateWorkflowVarForm()">
+                                <label for="workflowVarWorkflowsSelect">Select a Workflow</label>
+                                <select class="form-control" id="workflowVarWorkflowsSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div id="workflowvars">
+
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addWorkflowVar('','');">Specify Another Variable</button>
+                        </div>
+
+                        
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>
+                    <br>
+                    <div id="workflow_editor"></div>
+      
+                </div>
+                <div id="instances_section">
+                    <h1 class="page-header">Instances</h1>
+                    <form>
+                        <h3>Edit Instance</h3>
+                        <div class="form-group">
+                            <label for="instanceWorkflowsSelect">Select and Workflow</label>
+                            <select class="form-control", id="instanceWorkflowsSelect" onchange="updateInstancesAndDisksOnInstanceForm()">
+                                <option>Workflow 1</option>
+                                <option>Workflow 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceInstancesSelect">Select and Instance to Edit</label>
+                            <select class="form-control" id="instanceInstancesSelect" onchange="updateInstanceOptionsOnInstanceForm();">
+                                <option>New Instance</option>
+                                <option>Instance 1</option>
+                                <option>Instance 2</option>
+                            </select>
+                        </div>
+                        <label for="instanceName">Instance Name</label>
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="instanceName" placeholder="Name of Instance">
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceMachineTypeSelector">Select a Machine Type</label>
+                            <select class="form-control" id="instanceMachineTypeSelector">
+                                <option>f1-micro</option>
+                                <option>g1-small</option>
+                                <option>n1-standard-1</option>
+                                <option>n1-standard-2</option>
+                                <option>n1-standard-4</option>
+                                <option>n1-standard-8</option>
+                                <option>n1-standard-16</option>
+                                <option>n1-highcpu-2</option>
+                                <option>n1-highcpu-4</option>
+                                <option>n1-highcpu-8</option>
+                                <option>n1-highcpu-16</option>
+                                <option>n1-highmem-2</option>
+                                <option>n1-highmem-4</option>
+                                <option>n1-highmem-8</option>
+                                <option>n1-highmem-16</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceLocationSelector">Select a Location</label>
+                            <select class="form-control" id="instanceLocationSelector" onchange="updateInstanceFormMachineTypes();">
+                                <option>us-central1-a</option>
+                                <option>us-central1-b</option>
+                                <option>us-central1-c</option>
+                                <option>us-central1-f</option>
+                                <option>us-east1-b</option>
+                                <option>us-east1-c</option>
+                                <option>us-east1-d</option>
+                                <option>europe-west1-b</option>
+                                <option>europe-west1-d</option>
+                                <option>europe-west1-c</option>
+                                <option>asia-east1-a</option>
+                                <option>asia-east1-b</option>
+                                <option>asia-east1-c</option>
+                            </select>
+                        </div>
+                        <label for="instanceBootDisk">Select a Boot Disk</label>
+                        <div id="instanceBootDisk">
+                        </div>
+                        <label for="instanceReadDisks">Add Read Disks</label>
+                        <div id="instanceReadDisks">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addDisk('', 'read');">Add Another Read Disk</button>
+                        </div>
+                        <label for="instanceReadWriteDisks">Add Read/Write Disks</label>
+                        <div id="instanceReadWriteDisks">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addDisk('', 'readwrite');">Add Another Read/Write Disk</button>
+                        </div>
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>      
+                    
+                    <form id="instance_variable_form">
+                        <h3>Edit instance variables</h3>
+                        <p class="help-block"> 
+                            Instance variable names will be substituted for the variable value in instance and disk names, dependencies, and commands. 
+                            This is useful when you want to run in parallel different versions of the same instance template with slight alterations 
+                            (e.g. the same instances in a genomics workflow run on different sets of chromosomes). Instance variables apply only within
+                            the instance for which they are specified.
+                        </p> 
+                        <div class="row">
+                            <div class="form-group col-sm-10"  onchange="updateInstancesInInstanceVarForm()">
+                                <label for="instanceVarWorkflowsSelect">Select a Workflow</label>
+                                <select class="form-control" id="instanceVarWorkflowsSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group col-sm-10"  onchange="updateInstanceVariablesInInstanceVarForm()">
+                                <label for="instanceVarInstancesSelect">Select an Instance</label>
+                                <select class="form-control" id="instanceVarInstancesSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div id="instancevars">
+
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addInstanceVar();">Specify Another Variable</button>
+                        </div>  
+                        <button type="submit" class="btn btn-default">Save Variables</button>
+                    </form>             
+                </div>
+                
+                <div id="disks_section">
+                    <h1 class="page-header">Disks</h1>
+                    <form id="disk_form">
+                        <h3>Edit Disk</h3>
+                        <div class="form-group">
+                            <label for="diskWorkflowsSelect">Select a Workflow</label>
+                            <select class="form-control", id="diskWorkflowsSelect" onchange="updateDisksOnDiskForm()">
+                                <option>Workflow 1</option>
+                                
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="diskDisksSelect">Select a Disk to Edit</label>
+                            <select class="form-control" id="diskDisksSelect" onchange="updateDiskOptionsOnDiskForm();">
+                                <option>New Disk</option>
+                                <option>Disk 1</option>
+                                <option>Disk 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="diskName">Disk Name</label>
+                            <input type="text" class="form-control" id="diskName" placeholder="Name of Disk">
+                        </div>
+                        <div class="form-group">
+                            <label for="diskImagesSelect">Select a Disk Image</label>
+                            <select class="form-control" id="diskImagesSelect">
+                                <option>New Disk</option>
+                                <option>Image 1</option>
+                                <option>Coconut Curry</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="diskSize">Select a Disk Size</label>
+                            <input type="text" class="form-control" id="diskSize" placeholder="Size in GB (in range 10-10240)">
+                        </div>
+                        <div class="form-group">
+                            <label for="diskTypeSelector">Select a Disk Type</label>
+                            <select class="form-control" id="diskTypeSelector">
+                                <option>pd-ssd</option>
+                                <option>pd-standard</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="diskLocationSelector">Select a Location</label>
+                            <select class="form-control" id="diskLocationSelector" >
+                                <option>us-central1-a</option>
+                                <option>us-central1-b</option>
+                                <option>us-central1-c</option>
+                                <option>us-central1-f</option>
+                                <option>us-east1-b</option>
+                                <option>us-east1-c</option>
+                                <option>us-east1-d</option>
+                                <option>europe-west1-b</option>
+                                <option>europe-west1-d</option>
+                                <option>europe-west1-c</option>
+                                <option>asia-east1-a</option>
+                                <option>asia-east1-b</option>
+                                <option>asia-east1-c</option>
+                            </select>
+                        </div>
+                        <!-- <h4>Select an Initialization Source</h4>
+                        <h4>Select an Shutdown Destination</h4> -->
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>      
+                    
+                    <form id="disk_variable_form">
+                        <h3>Edit Disk Variables</h3>
+                        <p class="help-block"> 
+                            Disk variable names will be substituted for the variable value in disk. 
+                            This is useful when you want to run in parallel different versions of the same instance template with slight alterations 
+                            (e.g. the same instances in a genomics workflow run on different sets of chromosomes). Disk variables apply only within
+                            the disk for which they are specified.
+                        </p> 
+                        <div class="row">
+                            <label for="diskVarWorkflowsSelect">Select a Workflow</label>
+                            <div class="form-group col-sm-10"  onchange="updateDisksInDiskVarForm()">
+                                <select class="form-control" id="diskVarWorkflowsSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label for="diskVarDisksSelect">Select a Disk</label>
+                            <div class="form-group col-sm-10"  onchange="updateDiskVariablesInDiskVarForm()">
+                                <select class="form-control" id="diskVarDisksSelect">
+                                </select>
+                            </div>
+                        </div>
+                        <div id="diskvars">
+
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addDisksVar('','');">Specify Another Variable</button>
+                        </div>  
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>             
+                </div>
+                
+                <div id="commands_section">
+                    <h1 class="page-header">Commands</h1>
+                    
+                    <form>
+                        <h4>Edit Command</h4>
+                        <div class="form-group">
+                            <label for="workflowInCommandForm">Select a Workflow</label>
+                            <select class="form-control" id="workflowInCommandForm">
+                                <option>Workflow A</option>
+                                <option>Workflow B</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceInCommandForm">Select an Instance</label>
+                            <select class="form-control" id="instanceInCommandForm">
+                                <option>Instance A</option>
+                                <option>Instance B</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="commandInCommandForm">Select a Command to Edit</label>
+                            <select class="form-control" id="commandInCommandForm">
+                                <option>New Command</option>
+                                <option>Command A</option>
+                                <option>Command B</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="CommandName">Command Name</label>
+                            <input type="text" class="form-control" id="CommandName" placeholder="e.g. Command 1">
+                        </div>
+                        <label for="CommandDependencies">Command Dependencies</label>
+                        <p class="help-block">
+                            Indicate the command(s) that must finish without failing for this command to run. If a sequence of
+                            commands should be run first you only need to indicate the last command in the sequence.
+                        </p> 
+                        <div id="CommandDependencies">
+
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default" onclick="addCommandDependency();">Add a Dependency</button>
+                        </div>  
+                        
+                        <div class="form-group">
+                            <label for="Command">Command</label>
+                            <p class="help-block">
+                            This is one or more lines of code to run. Each line will be run on the instance using python's subprocess module as follows: 
+                            subprocess.Popen(eachline, shell=True)
+                            </p> 
+                            <textarea class="form-control" id="Command" placeholder="e.g. echo hello"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-default">Save</button>
+                        <button type="submit" class="btn btn-default">Delete</button>
+                        <button type="submit" class="btn btn-default">Save as New Command</button>
+                    </form>
+                </div>
+                
+                <div id="images_section">
+                    <h1 class="page-header">Images</h1>
+                    <form id="disk_form">
+                        <h3>Edit Image</h3>
+                        <div class="form-group">
+                            <label for="imageImagesSelect">Select an Image to Edit</label>
+                            <select class="form-control" id="imageImagesSelect" onchange="updateImageOptionsOnImageForm();">
+                                <option>New Image</option>
+                                <option>Image A</option>
+                                <option>Image B</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="imageNameOnImageForm">Image Name</label>
+                            <input type="text" class="form-control" id="imageNameOnImageForm" placeholder="Image Name in Your GCE Account">
+                        </div>
+                        <div class="form-group">
+                            <label for="authAccount">Auth Account</label>
+                            <input type="text" class="form-control" id="authAccount" placeholder="probably some email address">
+                            <p class="help-block">This optional argument is used to sign into the appropriate google account using 'gcloud config set account'. This is useful for specifying an account with appropriate permissions to use utilities like gsutil to transfer files to cloud storage. </p>
+                        </div> 
+                        <!-- <h4>Select an Initialization Source</h4>
+                        <h4>Select an Shutdown Destination</h4> -->
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>
+                </div>
+                
+                <div id="credentials_section">
+                    <h1 class="page-header">Credentials</h1>
+                    <h4>Edit Your Credentials</h4>
+                    <form>
+                        <div class="form-group">
+                            <label for="credentialsName">Name of Credentials</label>
+                            <input type="text" class="form-control" id="credentialsName" placeholder="Name of Credentials">
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceAccountEmail">Service Account Email</label>
+                            <input type="text" class="form-control" id="serviceAccountEmail" placeholder="something@developer.gserviceaccount.com">
+                        </div>
+                          <div class="form-group">
+                              <label for="pemFileUpload">PEM File</label>
+                              <input type="file" id="pemFileUpload">
+                          </div>                   
+                        <button type="submit" class="btn btn-default">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
   
 {% endif %}
 </div>
 <!-- #content--> 
 {% endblock %}
+

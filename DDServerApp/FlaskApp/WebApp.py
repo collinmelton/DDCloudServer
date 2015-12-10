@@ -4,7 +4,7 @@ Created on Oct 20, 2014
 @author: cmelton
 '''
 
-import sys, os
+import sys, os, json
 
 path = os.getcwd().split("DDServerApp")[0]
 if not path in sys.path:
@@ -14,6 +14,9 @@ if not path in sys.path:
 from flask import Flask, url_for, render_template, session, request, redirect, flash, Markup, jsonify
 from DDServerApp.ORM.Mappers import orm, User, UserUtilities
 from DDServerApp.ORM import BASE_DIR
+from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce
+
+
 
 # if '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/' in os.getcwd(): #=='/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring/FlaskApp':
 #     path = '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring'
@@ -37,13 +40,21 @@ from flask_bootstrap import Bootstrap
 # from urllib2 import urlopen, build_opener
 # import json
 
+from flask_oauthlib.provider import OAuth1Provider
+
+
+
 app = Flask(__name__)
 Bootstrap(app)
+oauth = OAuth1Provider(app)
 
 app.secret_key='\x9f\x058.\x1a\xde\x7fn\xc6G\x08\xd0m|\xdd\xd0\xf6)\x80x8*+\xc5'
 SESSION= orm.loadSession()
 SESSION.rollback()
 app.config["JSON_SORT_KEY"] = False
+app.config["OAUTH1_PROVIDER_REALMS"]=[""]
+app.config["OAUTH1_PROVIDER_ENFORCE_SSL"] = False
+# app.config["OAUTH1_PROVIDER_SIGNATURE_METHODS"] = ( SIGNATURE_HMAC)
 
 
 @app.route('/')
@@ -55,6 +66,199 @@ def index():
         user = User.findUser(session["username"], SESSION)
     return render_template('index_modern.html')
 
+@app.route('/about', methods=['GET'])
+def about():
+    return render_template('about_modern.html')
+
+
+@oauth.clientgetter
+def load_client(client_key):
+    '''
+    This function loads the oauth client given a client key.
+    A client getter is required. It tells which client is sending the requests.
+    '''
+    return Client.findFirst(client_key, SESSION)
+
+@oauth.grantgetter
+def load_request_token(token):
+    '''
+    This function loads a request token given the token.
+    Request token & verifier getters and setters are required. They are used in the authorization flow.
+    '''
+    grant = RequestToken.findFirst(token, SESSION)
+    return grant
+
+@oauth.grantsetter
+def save_request_token(token, request):
+    '''
+    This function saves the request token.
+    Request token & verifier getters and setters are required. They are used in the authorization flow.
+    '''
+    if oauth.realms:
+        realms = ' '.join(request.realms)
+    else:
+        realms = None
+    grant = RequestToken(
+        token=token['oauth_token'],
+        secret=token['oauth_token_secret'],
+        client=request.client,
+        redirect_uri=request.redirect_uri,
+        _realms=realms,
+    )
+    SESSION.add(grant)
+    SESSION.commit()
+    return grant
+
+@oauth.verifiergetter
+def load_verifier(verifier, token):
+    '''
+    Loads a verifier token.
+    Request token & verifier getters and setters are required. They are used in the authorization flow.
+    '''
+    return RequestToken.findFirst(token, SESSION, verifier=verifier)
+
+@oauth.verifiersetter
+def save_verifier(token, verifier, *args, **kwargs):
+    '''
+    Adds a verifier token.
+    Request token & verifier getters and setters are required. They are used in the authorization flow.
+    '''
+    tok = RequestToken.findFirst(token)
+    tok.verifier = verifier['oauth_verifier']
+    tok.user = getCurrentUser()
+    SESSION.add(tok)
+    SESSION.commit()
+    return tok
+
+def getCurrentUser():
+    '''
+    Gets the current user logged into the session.
+    '''
+    if 'username' not in session: return None
+    return User.findUser(session['username'], SESSION)
+
+@oauth.tokengetter
+def load_access_token(client_key, token, *args, **kwargs):
+    '''
+    This function loads the access token given the client_key and token.
+    '''
+    t = AccessToken.findFirst(client_key, token, SESSION)
+    return t
+
+@oauth.tokensetter
+def save_access_token(token, request):
+    '''
+    This function saves an access token.
+    '''
+    tok = AccessToken(
+        client=request.client,
+        user=request.user,
+        token=token['oauth_token'],
+        secret=token['oauth_token_secret'],
+        _realms=token['oauth_authorized_realms'],
+    )
+    SESSION.add(tok)
+    SESSION.commit()
+
+@oauth.noncegetter
+def load_nonce(client_key, timestamp, nonce, request_token, access_token):
+    '''
+    Finds the nonce.
+    '''
+    return Nonce.findFirst(client_key, timestamp, nonce, request_token, access_token, SESSION)
+
+@oauth.noncesetter
+def save_nonce(client_key, timestamp, nonce, request_token, access_token):
+    '''
+    Saves a nonce. The nonce ensures that a token is used one and in a certain time frame.
+    '''
+    nonce = Nonce(
+        client_key=client_key,
+        timestamp=timestamp,
+        nonce=nonce,
+        request_token=request_token,
+        access_token=access_token,
+    )
+    SESSION.add(nonce)
+    SESSION.commit()
+    return nonce
+
+# @app.route('/oauth/request_token')
+# @oauth.request_token_handler
+# def request_token():
+#     '''
+#     I believe the decorator takes care of returning something meaningful??
+#     '''
+#     return {}
+
+# def require_login(func):
+#     '''
+#     At some point maybe should require that the user be logged in otherwise redirect.
+#     For now don't worry about it because we want to skip the user authentication step.
+#     '''
+#     return func
+
+# @app.route('/oauth/authorize', methods=['GET', 'POST'])
+# @require_login
+# @oauth.authorize_handler
+# def authorize(*args, **kwargs):
+#     '''
+#     Returns the form if GET and if POST returns True if confirmation is yes.
+#     Might not be useful for API calls but could always just POST directly to authorize.
+#     For now if the client exists we will allow access and each worker instance will get a unique client id.
+#     Actually we can call authorize as the instance is made and pass the request token as part of the startup script although
+#     the nonce only last for 60 sec by default?
+#     '''
+# #     if request.method == 'GET':
+#     return jsonify(request)
+#     client_key = kwargs.get('resource_owner_key')
+#     client = Client.findFirst(client_key, SESSION)
+#     if client != None: return True
+#     return False
+#     kwargs['client'] = client
+#         return render_template('authorize.html', **kwargs)
+#     confirm = request.form.get('confirm', 'no')
+#     return confirm == 'yes'
+
+
+
+@app.route('/oauth/access_token')
+@oauth.access_token_handler
+def access_token():
+    return {}
+
+@app.route('/api/me')
+@oauth.require_oauth('full')
+def me():
+    '''
+    Returns user info in json form.
+    '''
+    return jsonify({"this":"worked!"})
+    user = request.oauth.user
+    return jsonify(username=user.name)
+
+@app.route('/api/commands', methods=['GET', 'POST'])
+@oauth.require_oauth('full')
+def commands():
+    '''
+    Returns command info in json form.
+    '''
+    if request.method == "GET":
+        client = request.oauth.client
+        return jsonify({c.id: c.toSummary() for c in client.instance.commands})
+        print request.oauth.__dict__.keys()
+        return jsonify({"this":"worked!"})
+    else:
+#         return jsonify({"this":"worked!"})
+        client = request.oauth.client
+        client.instance.updateCommandData(json.loads(request.data))
+        return jsonify({"this":"worked!"})
+#         SESSION.add(client.instance)
+#         SESSION.commit()
+        print "back to app"
+        return jsonify({"this":"worked!"})
+
+
 # @app.route('/trial/', methods=['GET','POST'])
 # def annotatenewtrial():
 #     user, trialannotationset, redirect_return = getUserAndTrial(None, redirect_dest="index")
@@ -62,11 +266,6 @@ def index():
 #     if trialannotationset == None:
 #         trialannotationset=ClinicalTrial.getUnannotatedTrial(user, SESSION, WORDSETS)
 #     return redirect(url_for('show_trial_data', tid=trialannotationset.id))
-
-
-@app.route('/about', methods=['GET'])
-def about():
-    return render_template('about_modern.html')
 
 
 # @app.route('/_updatedata', methods=['GET'])
@@ -215,4 +414,13 @@ def about():
 
 # app.run(debug=True)
 if __name__ == '__main__':
+#     import logging
+#     from logging.handlers import RotatingFileHandler
+#     file_handler = RotatingFileHandler('python.log', maxBytes=1024 * 1024 * 100, backupCount=20)
+#     file_handler.setLevel(logging.ERROR)
+#     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+#     file_handler.setFormatter(formatter)
+#     app.logger.addHandler(file_handler)
+    import logging
+    logging.basicConfig()
     app.run(debug=True) # debug must be off on production for security reasons
