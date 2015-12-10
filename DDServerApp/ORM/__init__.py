@@ -27,6 +27,7 @@ DB_NAME = 'laptop.db'
 DB_DIR = os.path.join(BASE_DIR,'Data')
 DB_TYPE = 'sqlite'
 
+
 #------------------------------------------------------------------------------------------------------------#
 
 
@@ -41,6 +42,8 @@ class Base(TimestampMixin, object):
         return self.__name__.lower()
     
     __table_args__ = {'extend_existing': 'True'}
+
+
     
 #     id = Column(Integer,primary_key=True)
     
@@ -86,3 +89,5 @@ def createORMUtility():
     return ORM_Utility(db_type=DB_TYPE,db_dir=DB_DIR,db_name=DB_NAME)
 
 orm = createORMUtility()
+
+ 

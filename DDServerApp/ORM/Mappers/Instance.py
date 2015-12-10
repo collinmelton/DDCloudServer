@@ -82,11 +82,18 @@ class Instance(orm.Base):
 
     # string output
     def __str__(self):
-        return self.name
+        return "instance object: "+self.name
     
     # representation output
     def __repr__(self):
-        return self.name
+        return str(self)
+
+    # update command data, this is built for data coming from a worker instance
+    def updateCommandData(self, data):
+        thiscommand = next(c for c in self.commands if c.id == data["id"])
+        thiscommand.updateCommandData(data)
+        print "updated"
+        
 
     # update the status of this instance
     def updateStatus(self, instanceManager):

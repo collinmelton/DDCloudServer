@@ -48,8 +48,8 @@ class User(orm.Base):
     id = Column(Integer,primary_key=True)
     name = Column(String, unique=True, index=True)
     role = Column(String)
-    instances = relationship(Instance, secondary='instancepermissions')
-    disks = relationship(Disk, secondary='diskpermissions')
+    instances = relationship(Instance, secondary='instancepermissions', backref = 'user')
+    disks = relationship(Disk, secondary='diskpermissions', backref = 'user')
     pw_hash = Column(String)
 
     def __init__(self, name, role, password):
@@ -67,7 +67,8 @@ class User(orm.Base):
         self.disks = self.disks + disks
         
     def addInstances(self, instances):
-        self.instances = self.instances + instances
+        self.instances+=instances
+        
 
     def set_password(self, password):
         self.pw_hash = generate_password_hash(password)
