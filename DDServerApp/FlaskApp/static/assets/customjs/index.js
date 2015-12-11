@@ -24,87 +24,120 @@ function removeDivsDiv(e) {
 
 // this object stores data about the current workflow, it should be updated
 // whenever the user submits/saves/edits any of the workflow's data
-var WORKFLOWDATA = {workflows:  {"Workflow 1": 
-                                    {"variables": {"var1": "1, 2, z", "var2": "q"},
+var WORKFLOWDATA = {workflows:  {"1": 
+                                    {"id":"1",
+                                    "name": "Workflow 1",
+                                    "variables": {"var1": "1, 2, z", "var2": "q"},
                                     "instances": 
-                                        {"Instance 1": {"Commands": {"Command 1": {}},
-                                                        "BootDisk": "Disk 0",
+                                        {"1": {"id": "1", 
+                                        				"name": "Instance 1",
+                                        				"Commands": {"Command 1": {}},
+                                                        "BootDisk": "0",
                                                         "ReadDisks": [],
-                                                        "WriteDisks": ["Disk 1"], 
+                                                        "WriteDisks": ["1"], 
                                                         "variables": {"var1": "1", "var2": "2"},
                                                         "machinetype": "n1-standard-1",
                                                         "location": "us-central1-a" 
                                                         }, 
-                                         "Instance 2":{"Commands": {"Command 2": {}},
-                                                        "BootDisk": "Disk 0",
-                                                        "ReadDisks": ["Disk 1"],
-                                                        "WriteDisks": ["Disk 2"],
+                                         "2":{"id": "2", 
+                                         				"name": "Instance 2",
+                                         				"Commands": {"Command 2": {}},
+                                                        "BootDisk": "0",
+                                                        "ReadDisks": ["1"],
+                                                        "WriteDisks": ["2"],
                                                         "variables": {"var1": "1-2", "var2": "2-2"},
                                                         "machinetype": "n1-standard-2",
                                                         "location": "us-central1-a" 
                                                         },
                                         },
-                                    "disks": {"Disk 0": {"location":"us-central1-b", 
+                                    "disks": {"0": {"id": "0",
+                                    					"name": "Disk 0",
+                                    					"location":"us-central1-b", 
                                     					"disktype":"pd-standard", 
                                     					"size": "100",
+                                    					"image": "1",
                                     					"variables": {"var1": "1, 2, z", "var2": "q"}
                                     					}, 
-                                    		  "Disk 1": {"location":"us-central1-b", 
+                                    		  "1": {"id": "1",
+                                    		  			"name": "Disk 1",
+                                    		  			"location":"us-central1-b", 
                                     					"disktype":"pd-standard", 
                                     					"size": "200",
+                                    					"image": "2",
                                     					"variables": {"var1": "1, 2, z", "var2": "q"}
                                     					}, 
-                                    		  "Disk 2": {"location":"us-central1-a", 
+                                    		  "2": {"id":"2",
+                                    		  			"name": "Disk 2",
+                                    		  			"location":"us-central1-a", 
                                     					"disktype":"pd-standard", 
                                     					"size": "300",
+                                    					"image": "1",
                                     					"variables": {"var1": "1, 2, z", "var2": "q"}
                                     					}
                                     		  }
-                                }, "Workflow 2":
-                                    {"variables": {"var1": "10, 2, az", "var2": "q2"},
+                                }, "2":{
+                                	"id": "2",
+                                	"name": "Workflow 2",
+                                	"variables": {"var1": "10, 2, az", "var2": "q2"},
                                     "instances": 
-                                        {"Instance 3": {"Commands": {"Command 3": {}},
-                                                        "BootDisk": "Disk 3",
-                                                        "ReadDisks": ["Disk 4"],
-                                                        "WriteDisks": ["Disk 5"],
+                                        {"3": {"id":"3", 
+                                        				"name": "Instance 3",
+                                        				"Commands": {"Command 3": {}},
+                                                        "BootDisk": "3",
+                                                        "ReadDisks": ["4"],
+                                                        "WriteDisks": ["5"],
                                                         "variables": {"var1": "1-3", "var2": "1-4"},
                                                         "machinetype": "n1-standard-4",
                                                         "location": "us-central1-a" 
                                                         }, 
-                                          "Instance 4":{"Commands": {"Command 4": {}},
-                                                        "BootDisk": "Disk 6",
-                                                        "ReadDisks": ["Disk 4"],
-                                                        "WriteDisks": ["Disk 5", "Disk 3"],
+                                          "4":{"id": "4",
+                                          				"name": "Instance 4",
+                                          				"Commands": {"Command 4": {}},
+                                                        "BootDisk": "6",
+                                                        "ReadDisks": ["4"],
+                                                        "WriteDisks": ["5", "3"],
                                                         "variables": {"var1": "1-5", "var2": "1-6"},
                                                         "machinetype": "n1-standard-16",
                                                         "location": "us-central1-a" 
                                                         }
                                     },
-                                    "disks": {"Disk 3": {"location":"us-central1-a", 
+                                    "disks": {"3": {"id": "3",
+                                    					"name": "Disk 3",
+                                    					"location":"us-central1-a", 
                                     					"disktype":"pd-ssd", 
                                     					"size": "100",
+                                    					"image": "1",
                                     					"variables": {"var1": "1, 2, z", "var2": "q"}
                                     					}, 
-                                    		  "Disk 4": {"location":"us-central1-a", 
+                                    		  "4": {"id": "4",
+                                    		  			"name": "Disk 4",
+                                    		  			"location":"us-central1-a", 
                                     					"disktype":"pd-standard", 
                                     					"size": "200",
+                                    					"image": "2",
                                     					"variables": {"var1": "4", "var2": "q"}
                                     					}, 
-                                    		  "Disk 5": {"location":"us-central1-a", 
+                                    		  "5": {"id": "5",
+                                    		  			"name": "Disk 5",
+                                    		  			"location":"us-central1-a", 
                                     					"disktype":"pd-ssd", 
                                     					"size": "300",
+                                    					"image": "1",
                                     					"variables": {"var1": "5", "var2": "q"}
                                     					}, 
-                            			      "Disk 6": {"location":"us-central1-a", 
+                            			      "6": {"id": "6",
+                            			      			"name": "Disk 6",
+                            			      			"location":"us-central1-a", 
                                     					"disktype":"pd-standard", 
                                     					"size": "400",
+                                    					"image": "2",
                                     					"variables": {"var1": "6", "var2": "q"}
                                     					}
                                     					}
                                     		  }
                                 	},
-                    images: {"Image 1": {"authaccount": "testauth@auth.com"}, 
-                    		 "Image 2":{"authaccount": "testauth2@auth.com"},
+                    images: {"1": {"id": "1", "name": "Image 1", "authaccount": "testauth@auth.com"}, 
+                    		 "2":{"id": "2", "name": "Image 2", "authaccount": "testauth2@auth.com"},
                     		},
                     credentials: {"name": "testname", "serviceaccount": "test@test.com"},
                     }
@@ -122,6 +155,131 @@ function getData(keys) {
 // this function will make an ajax call to update the workflowdata variable
 function updateWorkflowData() {
     return
+}
+
+function splitNameIntoIDAndName(name) {
+	var split = name.split(": ");
+	var id = split[0];
+	var name = split.slice(1, split.length).join(": ");
+	return({"id":id, "name":name});
+}
+
+// get a workflow
+function getWorkflow(workflowSelect) {
+	var workflows = getData(["workflows"]);
+	// console.log(workflows);
+    var currentWorkflowIDName = $("#"+workflowSelect+" :selected").html();
+    // console.log(currentWorkflowIDName);
+    var currentWorkflowID = splitNameIntoIDAndName(currentWorkflowIDName)["id"];
+    // console.log(currentWorkflowID);
+    // // var currentWorkflowName = splitNameIntoIDAndName(currentWorkflowIDName)["name"];
+    // console.log(Object.keys(workflows));
+    // console.log(typeof(Object.keys(workflows)[0]));
+    // console.log(typeof(currentWorkflowID));
+    // console.log(Object.keys(workflows)[0]+currentWorkflowID);
+    // console.log(Object.keys(workflows)[0]==currentWorkflowID);
+    // console.log($.inArray(currentWorkflowID, Object.keys(workflows))> -1);
+    var currentWorkflow = workflows[currentWorkflowID];
+    // console.log(currentWorkflow);
+    return(currentWorkflow);
+}
+
+// get a variable in a workflow e.g. disk or instance
+function getWorkflowVar(workflowSelect, varSelect, vartype) {
+	var currentWorkflow = getWorkflow(workflowSelect);
+	var varIDName = $("#"+varSelect+" :selected").html();
+	console.log(varIDName);
+    var varID = splitNameIntoIDAndName(varIDName)["id"];
+    console.log(varID);
+    console.log(Object.keys(currentWorkflow[vartype]));
+    if (!($.inArray(varID, Object.keys(currentWorkflow[vartype]))>-1)) {return("None");}
+    console.log(currentVar);
+    console.log(currentWorkflow);
+    console.log(currentWorkflow[vartype]);
+    var currentVar = currentWorkflow[vartype][varID];
+    console.log(currentVar);
+    return(currentVar);
+}
+
+// get an instance
+function getInstance(workflowSelect, instanceSelect) {
+	return(getWorkflowVar(workflowSelect, instanceSelect, "instances"));
+}
+
+// get a disk
+function getDisk(workflowSelect, diskSelect) {
+	return(getWorkflowVar(workflowSelect, diskSelect, "disks"));
+}
+
+// get a disk by id
+function getDiskByID(workflow, id) {
+	console.log("disk by id");
+	console.log(workflow["disks"][id]);
+	return(workflow["disks"][id]);
+}
+
+// get a image by id
+function getImageByID(id) {
+	var data = getData(["images"]);
+	return(data[id]);
+}
+
+// get an image
+function getImage(imageSelect) {
+	var images = getData(["images"]);
+	var varIDName = $("#"+imageSelect+" :selected").html();
+	console.log(varIDName);
+	var varID = splitNameIntoIDAndName(varIDName)["id"];
+	console.log(varID);
+	console.log(Object.keys(images));
+	if ($.inArray(varID, Object.keys(images))>-1) {
+		return(images[varID]);
+	} else {
+		return("None");
+	}
+	
+}
+
+// get a command
+function getCommand(workflowSelect, instanceSelect, commandSelect) {
+	var instance = getInstance(workflowSelect, instanceSelect);
+	var commandIDName = $("#"+commandSelect+" :selected").html();
+	if (commandIDName == "New Command") {
+		return("New Command");
+	}
+    var commandID = splitNameIntoIDAndName(commandIDName)["id"];
+    var command = instance["commands"][commandID];
+    return(command);
+}
+
+// standard naming scheme for options
+function getOptions(vars, additionalOptions, selected) {
+	var optionnames = [];
+	$.each(vars, function(index, value) {
+		optionnames.push(value["id"]+": "+value["name"]);
+	});
+	if (typeof additionalOptions === 'undefined') { additionalOptions = [];}
+	optionnames = optionnames.concat(additionalOptions);
+	// console.log(optionnames);
+	// console.log("value");
+	// console.log(value);
+	if (typeof selected === 'undefined') { 
+		selected = optionnames[0];
+	} else {
+		selected = selected["id"]+": "+selected["name"];
+	}
+	var result = "";
+	for (i=0; i<optionnames.length; i++) {
+		if (optionnames[i]==selected) {
+			result = result + "<option selected>";
+		} else {
+			result = result + "<option>";
+		}
+		result += optionnames[i] + "</option>";
+	}
+	// console.log(result);
+	return(result);
+	// return("<option>"+optionnames.join("</option><option>")+"</option>");
 }
 
 //// SOME FUNCTIONS TO GET MACHINE TYPES
@@ -259,13 +417,12 @@ function addDisksVar(key, value) {
 // updates the workflow variables form when a new workflow is selected
 function updateWorkflowVarForm() {
     // get workflow data
-    var workflows = getData(["workflows"]);
-    // get current workflow name
-    var currentWorkflowName = $("#workflowVarWorkflowsSelect :selected").html();
-    console.log(currentWorkflowName);
+    // var workflows = getData(["workflows"]);
+    // // get current workflow name
+    // var currentWorkflowName = $("#workflowVarWorkflowsSelect :selected").html();
+    // console.log(currentWorkflowName);
     // get data for current workflow
-    var currentWorkflow = workflows[currentWorkflowName];
-    console.log(currentWorkflow);
+    var currentWorkflow = getWorkflow("workflowVarWorkflowsSelect");
     // reset select
     $("#workflowvars").html("");
     // set variables of current workflow in form
@@ -280,36 +437,49 @@ function initWorkflowVarForm() {
     // get workflow data
     var workflows = getData(["workflows"]);
     // set workflow options
-    $("#workflowVarWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    $("#workflowVarWorkflowsSelect").html(getOptions(workflows));
+    // "<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
     updateWorkflowVarForm();
 }
 
 //// FUNCTIONS TO INITIALIZE AND UPDATE THE INSTANCE VARIABLES FORM
 
 function updateInstanceVariablesInInstanceVarForm() {
-    var workflows = getData(["workflows"]); // get workflow data
-    var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
-    var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
-    var currentInstanceName = $("#instanceVarInstancesSelect :selected").html(); // get current instance name
+    // var workflows = getData(["workflows"]); // get workflow data
+    // var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
+    // var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    // var currentInstanceName = $("#instanceVarInstancesSelect :selected").html(); // get current instance name
+    
+    
     $("#instancevars").html(""); // clear out old variables
-    var currentInstance = currentWorkflow["instances"][currentInstanceName]; // get current instance
-    var instancevars = currentInstance["variables"]; // get current instance variables
-    var keys = Object.keys(instancevars); // get instance variable keys
-    // change key value pairs
-    for (i=0; i<keys.length; i++) {
-    	addInstancesVar(keys[i], instancevars[keys[i]]);
-    }
+    var currentInstance = getInstance("instanceVarWorkflowsSelect", "instanceVarInstancesSelect");
+    if (currentInstance!="None") {
+	    console.log(currentInstance);
+	    // currentWorkflow["instances"][currentInstanceName]; // get current instance
+	    var instancevars = currentInstance["variables"]; // get current instance variables
+	    var keys = Object.keys(instancevars); // get instance variable keys
+	    // change key value pairs
+	    for (i=0; i<keys.length; i++) {
+	    	addInstancesVar(keys[i], instancevars[keys[i]]);
+	    }
+	}
 }
 
 // update instances select in instance variable form after workflow is selected
 function updateInstancesInInstanceVarForm() {
-    var workflows = getData(["workflows"]); // get workflow data
-    var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
-    var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
-    // update instance select html
-    var options = Object.keys(currentWorkflow["instances"]).join("</option><option>");
-    console.log(options);
-    $("#instanceVarInstancesSelect").html("<option>"+options+"</option>");
+    // var workflows = getData(["workflows"]); // get workflow data
+    // var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
+    // var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    
+    var currentWorkflow = getWorkflow("instanceVarWorkflowsSelect");
+    // 
+    // var options = Object.keys(currentWorkflow["instances"]).join("</option><option>");
+    // console.log(options);
+    // $("#instanceVarInstancesSelect").html("<option>"+options+"</option>");
+	
+	// update instance select html
+	$("#instanceVarInstancesSelect").html(getOptions(currentWorkflow["instances"]));
+	
 	updateInstanceVariablesInInstanceVarForm();
 }
 
@@ -318,48 +488,59 @@ function initInstanceVarForm() {
     // get workflow data
     var workflows = getData(["workflows"]);
     // set workflow options
-    $("#instanceVarWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    // $("#instanceVarWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    $("#instanceVarWorkflowsSelect").html(getOptions(workflows));
+    
     updateInstancesInInstanceVarForm();
 }
 
 //// FUNCTIONS FOR THE INSTANCE FORM
 
 // add another read disk option to the instance
-function addDisk(diskname, type) {
+function addDisk(disk, type) {
     // get disk names
-    var workflows = getData(["workflows"]);
-    var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
-    var currentWorkflow = workflows[currentWorkflowName];
-    var diskNames = Object.keys(currentWorkflow["disks"]);
-    var orderedDiskNames = diskNames;
-    if (diskname in diskNames) {
-        orderedDiskNames = [diskname, "None"]
+    // var workflows = getData(["workflows"]);
+    // var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
+    // var currentWorkflow = workflows[currentWorkflowName];
+    var currentWorkflow = getWorkflow("instanceWorkflowsSelect");
+    if (disk!="") {
+    	var orderedDiskNames = getOptions(currentWorkflow["disks"], ["None"], disk);	
     } else {
-        orderedDiskNames = ["None"]
+    	var orderedDiskNames = getOptions(currentWorkflow["disks"], ["None"]);
     }
-    // get formatted disknames to add and mark the correct name as selected
-    for (i=0; i<diskNames.length; i++) {
-        if (diskNames[i]==diskname) {
-            orderedDiskNames.push("<option selected>"+diskNames[i]+"</option>");
-        } else {
-            orderedDiskNames.push("<option>"+diskNames[i]+"</option>");
-        }
-    }
+    console.log("adding disk!");
+    console.log(orderedDiskNames);
+    
+//     
+    // diskNames;
+    // if (diskname in diskNames) {
+        // orderedDiskNames = [diskname, "None"]
+    // } else {
+        // orderedDiskNames = ["None"]
+    // }
+    // // get formatted disknames to add and mark the correct name as selected
+    // for (i=0; i<diskNames.length; i++) {
+        // if (diskNames[i]==diskname) {
+            // orderedDiskNames.push("<option selected>"+diskNames[i]+"</option>");
+        // } else {
+            // orderedDiskNames.push("<option>"+diskNames[i]+"</option>");
+        // }
+    // }
     // add disknames to select
     if (type == "read") {
         var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceReadDisksSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
+        var toadd = toadd + orderedDiskNames;
         var toadd = toadd + "</select>\n</div>\n<div class=\"form-group col-sm-4\">\n<button type=\"button\" class=\"btn btn-default\" onclick=\"removeDivsDiv(this)\" >Remove</button>\n</div></div>";
         $("#instanceReadDisks").append(toadd);    
     } else if (type == "readwrite") {
         var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceReadWriteDisksSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
+        var toadd = toadd + orderedDiskNames;
         var toadd = toadd + "</select>\n</div>\n<div class=\"form-group col-sm-4\">\n<button type=\"button\" class=\"btn btn-default\" onclick=\"removeDivsDiv(this)\" >Remove</button>\n</div></div>";
         $("#instanceReadWriteDisks").append(toadd);
     } else if (type == "boot") {
         $("#instanceBootDisk").html("");
         var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceBootDiskSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
+        var toadd = toadd + orderedDiskNames;
         var toadd = toadd + "</select>\n</div></div>";
         $("#instanceBootDisk").append(toadd);
     }   
@@ -367,35 +548,40 @@ function addDisk(diskname, type) {
 
 // update the instance form once workflow is selected
 function updateInstancesAndDisksOnInstanceForm() {
-    // get workflow data
-    var workflows = getData(["workflows"]);
-    // get current workflow name
-    var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
-    // get data for current workflow
-    var currentWorkflow = workflows[currentWorkflowName];
+    // // get workflow data
+    // var workflows = getData(["workflows"]);
+    // // get current workflow name
+    // var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
+    // // get data for current workflow
+    // var currentWorkflow = workflows[currentWorkflowName];
+    var currentWorkflow = getWorkflow("instanceWorkflowsSelect");
     // get instance and disk names
-    var instanceNames = ["New Instance"].concat(Object.keys(currentWorkflow["instances"]));
-    var diskNames = ["None"].concat(Object.keys(currentWorkflow["disks"]));
-    $("#instanceInstancesSelect").html("<option>"+instanceNames.join("</option><option>")+"</option>");
-    $("#instanceBootDiskSelect").html("<option>"+diskNames.join("</option><option>")+"</option>");
-    $("#instanceReadDisksSelect").html("<option>"+diskNames.join("</option><option>")+"</option>");
-    $("#instanceReadWriteDisksSelect").html("<option>"+diskNames.join("</option><option>")+"</option>");
+    var instanceOptions = getOptions(currentWorkflow["instances"], ["New Instance"]);
+    var diskOptions =  getOptions(currentWorkflow["disks"], ["None"]);
+    $("#instanceInstancesSelect").html(instanceOptions);
+    $("#instanceBootDiskSelect").html(diskOptions);
+    $("#instanceReadDisksSelect").html(diskOptions);
+    $("#instanceReadWriteDisksSelect").html(diskOptions);
+    
+    updateInstanceOptionsOnInstanceForm();
 }
 
 // update disk options on instance form
 function updateInstanceOptionsOnInstanceForm() {
-    // get workflow data
-    var workflows = getData(["workflows"]);
-    // get current workflow name
-    var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
-    // get data for current workflow
-    var currentWorkflow = workflows[currentWorkflowName];
-    // get current instance name
-    var currentInstanceName = $("#instanceInstancesSelect :selected").html();
+    // // get workflow data
+    // var workflows = getData(["workflows"]);
+    // // get current workflow name
+    // var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
+    // // get data for current workflow
+    // var currentWorkflow = workflows[currentWorkflowName];
+    // // get current instance name
+    // var currentInstanceName = $("#instanceInstancesSelect :selected").html();
     
-    if (currentInstanceName in currentWorkflow["instances"]) {
+    var currentInstance = getInstance("instanceWorkflowsSelect", "instanceInstancesSelect");
+    
+    if (currentInstance != "None") {
         // get current instance
-        var currentInstance = currentWorkflow["instances"][currentInstanceName];
+        // var currentInstance = currentWorkflow["instances"][currentInstanceName];
         
         // reset all disk option
         $("#instanceReadDisks").html("");    
@@ -403,28 +589,25 @@ function updateInstanceOptionsOnInstanceForm() {
         $("#instanceBootDisk").html("");
         
         // set instance name
-        $("#instanceName").html(currentInstanceName);
+        $("#instanceName").val(currentInstance["name"]);
         
         // add boot disk
-        addDisk(currentInstance["BootDisk"], "boot");
+        var workflow = getWorkflow("instanceWorkflowsSelect");
+        addDisk(getDiskByID(workflow, currentInstance["BootDisk"]), "boot");
         // add read disks
         var readDiskNames = currentInstance["ReadDisks"];
         for (i=0; i<readDiskNames.length; i++) {
-            addDisk(readDiskNames[i], "read");
+            addDisk(getDiskByID(workflow, readDiskNames[i]), "read");
         }
         // add read write disks
         var readWriteDiskNames = currentInstance["WriteDisks"];
         for (i=0; i<readWriteDiskNames.length; i++) {
-            addDisk(readWriteDiskNames[i], "readwrite");
+            addDisk(getDiskByID(workflow, readWriteDiskNames[i]), "readwrite");
         }
-        
         // set location
         setSelectorOption("instanceLocationSelector", currentInstance["location"]);
-        
         // set machine type
         setSelectorOption("instanceMachineTypeSelector", currentInstance["machinetype"]);
-        
-        
     } else {
         addDisk("", "boot");
     }
@@ -435,7 +618,8 @@ function initInstanceForm() {
     // get workflow data
     var workflows = getData(["workflows"]);
     // set workflow options
-    $("#instanceWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    $("#instanceWorkflowsSelect").html(getOptions(workflows));
+    // $("#instanceWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
     // update instance with instances specific to this workflow
     updateInstancesAndDisksOnInstanceForm();
     // update instance options with default first instance
@@ -445,39 +629,50 @@ function initInstanceForm() {
 //// CODE FOR DISKS FORM
 
 function updateDisksOnDiskForm() {
-	var workflows = getData(["workflows"]); // get workflow data
-    var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
-    var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
-    // update instance select html
-    var options = Object.keys(currentWorkflow["disks"]).join("</option><option>");
-    console.log(options);
-    $("#diskDisksSelect").html("<option>"+options+"</option>");
+	// var workflows = getData(["workflows"]); // get workflow data
+    // var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
+    // var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    var currentWorkflow = getWorkflow("diskWorkflowsSelect");
+    console.log(currentWorkflow["disks"]);
+    $("#diskDisksSelect").html(getOptions(currentWorkflow["disks"]));
+    // // update instance select html
+    // var options = Object.keys(currentWorkflow["disks"]).join("</option><option>");
+    // console.log(options);
+    // $("#diskDisksSelect").html("<option>"+options+"</option>");
+	console.log("about to update disk options");
 	updateDiskOptionsOnDiskForm();
 	// "#diskWorkflowsSelect"
 }
 
 // this functions updates the disk form values when a disk is selected
 function updateDiskOptionsOnDiskForm() {
-	// get workflow data
-    var workflows = getData(["workflows"]);
-    // get current workflow name
-    var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
-    // get data for current workflow
-    var currentWorkflow = workflows[currentWorkflowName];
-    // get current instance name
-    var currentDiskName = $("#diskDisksSelect :selected").html();
+	// // get workflow data
+    // var workflows = getData(["workflows"]);
+    // // get current workflow name
+    // var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
+    // // get data for current workflow
+    // var currentWorkflow = workflows[currentWorkflowName];
+    // // get current instance name
+    // var currentDiskName = $("#diskDisksSelect :selected").html();
     
-    if (currentDiskName in currentWorkflow["disks"]) {
-        // get current instance
-        var currentDisk = currentWorkflow["disks"][currentDiskName];
+    var currentDisk = getDisk("diskWorkflowsSelect", "diskDisksSelect");
+    
+    console.log(currentDisk);
+    
+    if (currentDisk != "None") {
+        // // get current instance
+        // var currentDisk = currentWorkflow["disks"][currentDiskName];
         // set name
-        $("#diskName").val(currentDiskName);
+        $("#diskName").val(currentDisk["name"]);
         // set size
         $("#diskSize").val(currentDisk["size"]);
         // set location
         setSelectorOption("diskLocationSelector", currentDisk["location"]);
         // set disk type
         setSelectorOption("diskTypeSelector", currentDisk["disktype"]);
+        // set image
+        var image = getImageByID(currentDisk["image"])
+        setSelectorOption("diskImagesSelect", image["id"]+": "+image["name"]);
     }
 }
 
@@ -486,34 +681,39 @@ function initDiskForm() {
     // get workflow data
     var workflows = getData(["workflows"]);
     // set workflow options
-    $("#diskWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
-    updateDisksInDiskVarForm();
+    // $("#diskWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    $("#diskWorkflowsSelect").html(getOptions(workflows));
+    updateDisksOnDiskForm();
     // get image data
     var images = getData(["images"]);
-    $("#diskImagesSelect").html("<option>"+Object.keys(images).join("</option><option>")+"</option>");
+    // $("#diskImagesSelect").html("<option>"+Object.keys(images).join("</option><option>")+"</option>");
+    $("#diskImagesSelect").html(getOptions(images));
     updateDisksInDiskVarForm();
 }
 
 // this function updates the disk names in the disk var form once a workflow is selected
 function updateDisksInDiskVarForm() {
-    var workflows = getData(["workflows"]); // get workflow data
-    var currentWorkflowName = $("#diskVarWorkflowsSelect :selected").html(); // get current workflow name
-    var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    // var workflows = getData(["workflows"]); // get workflow data
+    // var currentWorkflowName = $("#diskVarWorkflowsSelect :selected").html(); // get current workflow name
+    // var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    
+    var currentWorkflow = getWorkflow("diskVarWorkflowsSelect");
     // update instance select html
-    var options = Object.keys(currentWorkflow["disks"]).join("</option><option>");
-    $("#diskVarDisksSelect").html("<option>"+options+"</option>");
+    // Object.keys(currentWorkflow["disks"]).join("</option><option>");
+    // $("#diskVarDisksSelect").html("<option>"+options+"</option>");
+    $("#diskVarDisksSelect").html(getOptions(currentWorkflow["disks"]));
 }
 
 // this function updates the disk variables in the disk variable form once a disk is selected
 function updateDiskVariablesInDiskVarForm() {
-    var workflows = getData(["workflows"]); // get workflow data
-    var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
-    var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
-    var currentDiskName = $("#diskVarDisksSelect :selected").html(); // get current disk name
+    // var workflows = getData(["workflows"]); // get workflow data
+    // var currentWorkflowName = $("#instanceVarWorkflowsSelect :selected").html(); // get current workflow name
+    // var currentWorkflow = workflows[currentWorkflowName]; // get data for current workflow
+    // var currentDiskName = $("#diskVarDisksSelect :selected").html(); // get current disk name
+    
     $("#diskvars").html(""); // clear out old variables
-    console.log(currentWorkflow["disks"]);
-    console.log(currentDiskName);
-    var currentDisk = currentWorkflow["disks"][currentDiskName]; // get current disk
+    var currentDisk = getDisk("instanceVarWorkflowsSelect", "diskVarDisksSelect");
+    // var currentDisk = currentWorkflow["disks"][currentDiskName]; // get current disk
     var diskvars = currentDisk["variables"]; // get current disk variables
     var keys = Object.keys(diskvars); // get disk variable keys
     // change key value pairs
@@ -530,25 +730,29 @@ function initDiskVarForm() {
     // get workflow data
     var workflows = getData(["workflows"]);
     // set workflow options
-    $("#diskVarWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+    $("#diskVarWorkflowsSelect").html(getOptions(workflows));
+    // $("#diskVarWorkflowsSelect").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
     updateDisksInDiskVarForm();
 }
 
 // update image form
 function updateImageOptionsOnImageForm() {
 	// get current image
-    var currentImageName = $("#imageImagesSelect :selected").html();
+    // var currentImageName = $("#imageImagesSelect :selected").html();
+	
+	var image = getImage("imageImagesSelect");
+	console.log(image);
 	// reset form vars
 	$("#imageNameOnImageForm").val("");
     $("#authAccount").val("");
     // set form vars
-    if (currentImageName!="New Image") {
+    if (image !="None") {
     	// get image data
-    	var imagedata = getData(["images"]);
-    	var image = imagedata[currentImageName];
-    	console.log(image);
+    	// var imagedata = getData(["images"]);
+    	// var image = imagedata[currentImageName];
+    	// console.log(image);
 	    // set image name
-	    $("#imageNameOnImageForm").val(currentImageName);
+	    $("#imageNameOnImageForm").val(image["name"]);
 	    // set auth account
 	    $("#authAccount").val(image["authaccount"]);
 	}
@@ -557,7 +761,8 @@ function updateImageOptionsOnImageForm() {
 // initialize images form
 function initImageForm() {
     var images = getData(["images"]);
-    $("#imageImagesSelect").html("<option>New Image</option><option>"+Object.keys(images).join("</option><option>")+"</option>");
+    $("#imageImagesSelect").html(getOptions(images, ["New Image"]));
+    // $("#imageImagesSelect").html("<option>New Image</option><option>"+Object.keys(images).join("</option><option>")+"</option>");
 	updateImageOptionsOnImageForm();
 }
 
@@ -573,62 +778,52 @@ function initCredentialsForm() {
 
 //// CODE FOR COMMAND DEPENDENCIES
 
-function splitNameIntoIDAndName(name) {
-	var split = name.split(": ");
-	var id = split[0];
-	var name = split.slice(1, split.length).join(": ");
-	return({"id":id, "name":name});
-}
 
-console.log(splitNameIntoIDAndName("id: hello"));
 
 // sets command attributes in command form
 function setCommandAttributesInCommandForm() {
-	// get current workflow
-    var currentWorkflowName = $("#workflowInCommandForm :selected").html();
-    var currentWorkflow = workflows[currentWorkflowName];
-    // get current instance
-    var currentInstanceSelectedName = $("#instanceInCommandForm :selected").html();
-    
-    var currentInstanceName = splitNameIntoIDAndName(currentWorkflow["instances"][currentInstanceSelectedName])["name"];
-    var currentInstanceID = splitNameIntoIDAndName(currentWorkflow["instances"][currentInstanceSelectedName])["id"];
-    // get current command name
-    var currentCommandName = $("#commandInCommandForm :selected").html();
+	// get command
+    var command = getCommand("workflowInCommandForm", "instanceInCommandForm", "commandInCommandForm");
     // set command options
-    if (currentCommandName!= "New Command") {
-    	var currentCommand = currentInstance["commands"][currentCommandName];
+    if (command!= "New Command") {
+	    var currentCommandID = splitNameIntoIDAndName(currentCommandIDName)["id"];
+	    var currentCommandName = splitNameIntoIDAndName(currentCommandIDName)["name"];
+	    var currentCommand = currentInstance["commands"][currentCommandID];
 		// set command name
-		$("#CommandName").val(currentCommandName);
+		$("#CommandName").val(currentCommand["name"]);
 		// set command text
 		$("#Command").val(currentCommand["command"]);
 		// set command dependencies
-		var dependencies = currentCommand["dependencies"];
+		//var dependencies = currentCommand["dependencies"];	
 		
     }
-    
 }
 
 // sets command options in command form
 function setCommandOptionsInCommandForm() {
-    // get current workflow
-    var currentWorkflowName = $("#workflowInCommandForm :selected").html();
-    var currentWorkflow = workflows[currentWorkflowName];
-    // get current instance
-    var currentInstanceName = $("#instanceInCommandForm :selected").html();
-    var currentInstance = currentWorkflow["instances"][currentInstanceName];
+    // // get current workflow
+    // var currentWorkflowName = $("#workflowInCommandForm :selected").html();
+    // var currentWorkflow = workflows[currentWorkflowName];
+    // // get current instance
+    // var currentInstanceName = $("#instanceInCommandForm :selected").html();
+    // var currentInstance = currentWorkflow["instances"][currentInstanceName];
+    var currentInstance = getInstance("workflowInCommandForm", "instanceInCommandForm");
     // set command options
-    $("#instanceInCommandForm").html("<option>New Command</option><option>"+Object.keys(currentInstance["commands"]).join("</option><option>")+"</option>");
+    $("#instanceInCommandForm").html(getOptions(currentInstance["commands"], ["New Command"]));
+    // $("#instanceInCommandForm").html("<option>New Command</option><option>"+Object.keys(currentInstance["commands"]).join("</option><option>")+"</option>");
     // set command attributes
     setCommandAttributesInCommandForm();
 }
 
 // sets Instance options in command form
 function setInstanceOptionsInCommandForm() {
-    // get current workflow
-    var currentWorkflowName = $("#workflowInCommandForm :selected").html();
-    var currentWorkflow = workflows[currentWorkflowName];
+    // // get current workflow
+    // var currentWorkflowName = $("#workflowInCommandForm :selected").html();
+    // var currentWorkflow = workflows[currentWorkflowName];
+    var currentWorkflow = getWorkflow("workflowInCommandForm");
     // set instance options
-    $("#instanceInCommandForm").html("<option>"+Object.keys(currentWorkflow["instances"]).join("</option><option>")+"</option>");
+    $("#instanceInCommandForm").html(getOptions(currentWorkflow["instances"]));
+    // $("#instanceInCommandForm").html("<option>"+Object.keys(currentWorkflow["instances"]).join("</option><option>")+"</option>");
 	// set command options
 	setCommandOptionsInCommandForm();
 }
@@ -637,48 +832,31 @@ function setInstanceOptionsInCommandForm() {
 function initCommandForm() {
 	var workflows = getData(["workflows"]);
 	// set workflow options
-	$("#workflowInCommandForm").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
+	$("#workflowInCommandForm").html(getOptions(workflows));
+	// $("#workflowInCommandForm").html("<option>"+Object.keys(workflows).join("</option><option>")+"</option>");
     setInstanceOptionsInCommandForm();
 }
 
-function addCommandDependency() {
-	// get disk names
-    var workflows = getData(["workflows"]);
-    var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
-    var currentWorkflow = workflows[currentWorkflowName];
-    var diskNames = Object.keys(currentWorkflow["disks"]);
-    var orderedDiskNames = diskNames;
-    if (diskname in diskNames) {
-        orderedDiskNames = [diskname, "None"]
+function addCommandDependency(command) {
+	// // get disk names
+    // var workflows = getData(["workflows"]);
+    // var currentWorkflowName = $("#instanceWorkflowsSelect :selected").html();
+    // var currentWorkflow = workflows[currentWorkflowName];
+    
+    var currentInstance = getInstance("workflowInCommandForm", "instanceInCommandForm");
+    var commands = currentInstance["commands"];
+    if (command != "") {
+    	var options = getOptions(commands, ["None"], command);	
     } else {
-        orderedDiskNames = ["None"]
+    	var options = getOptions(commands, ["None"]);
     }
-    // get formatted disknames to add and mark the correct name as selected
-    for (i=0; i<diskNames.length; i++) {
-        if (diskNames[i]==diskname) {
-            orderedDiskNames.push("<option selected>"+diskNames[i]+"</option>");
-        } else {
-            orderedDiskNames.push("<option>"+diskNames[i]+"</option>");
-        }
-    }
+
     // add disknames to select
-    if (type == "read") {
-        var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceReadDisksSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
-        var toadd = toadd + "</select>\n</div>\n<div class=\"form-group col-sm-4\">\n<button type=\"button\" class=\"btn btn-default\" onclick=\"removeDivsDiv(this)\" >Remove</button>\n</div></div>";
-        $("#instanceReadDisks").append(toadd);    
-    } else if (type == "readwrite") {
-        var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceReadWriteDisksSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
-        var toadd = toadd + "</select>\n</div>\n<div class=\"form-group col-sm-4\">\n<button type=\"button\" class=\"btn btn-default\" onclick=\"removeDivsDiv(this)\" >Remove</button>\n</div></div>";
-        $("#instanceReadWriteDisks").append(toadd);
-    } else if (type == "boot") {
-        $("#instanceBootDisk").html("");
-        var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"instanceBootDiskSelect\">";
-        var toadd = toadd + orderedDiskNames.join("");
-        var toadd = toadd + "</select>\n</div></div>";
-        $("#instanceBootDisk").append(toadd);
-    }   
+    var toadd = "<div class=\"row\"><div class=\"form-group col-sm-6\">\n<select class=\"form-control\" name=\"commandDependenciesSelect\">";
+    var toadd = toadd + options;
+    var toadd = toadd + "</select>\n</div>\n<div class=\"form-group col-sm-4\">\n<button type=\"button\" class=\"btn btn-default\" onclick=\"removeDivsDiv(this)\" >Remove</button>\n</div></div>";
+    $("#CommandDependencies").append(toadd);    
+       
 }
 
 
