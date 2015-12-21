@@ -4,11 +4,19 @@
 {% block body %}
 
 
-<script src="/static/assets/customjs/index.js"></script>
+<script src="/static/assets/customjs/custom.js"></script>
 
 <script>
 
-    
+$(document).ready(function(){
+    // this code sets the write view on startup
+    toggleView("workflows_section");
+    $(".nav li").on("click", function() {
+        $(".nav li").removeClass("active");
+        $(this).addClass("active");
+    });
+    getUserData(updatePageElements, "setup");
+});
 
 </script>
 
@@ -55,7 +63,7 @@
                             <input type="text" class="form-control" id="newWorkflowName"  name="newWorkflowName" placeholder="Name of New Workflow">
                         </div>
                         <button type="button" onclick="submitForm(event, 'workflow', 'new')" class="btn btn-primary">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'workflow', 'delete', true)">Delete</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'workflow', 'delete', 'setup')">Delete</button>
                     </form>
                     <br>
                     <form id="workflow_variable_form">
@@ -81,7 +89,7 @@
                         </div>
 
                         
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'workflow', 'edit')">Save</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'workflow', 'edit', 'setup')">Save</button>
                     </form>
                     <br>
                     <div id="workflow_editor"></div>
@@ -143,6 +151,7 @@
                                 <option>asia-east1-c</option>
                             </select>
                         </div>
+
                         <label for="instanceBootDisk">Select a Boot Disk</label>
                         <div id="instanceBootDisk">
                         </div>
@@ -164,13 +173,53 @@
                             instances should be run first you only need to indicate the last instance in the sequence.
                         </p> 
                         <div id="InstanceDependencies">
-
                         </div>
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addInstanceDependency('');">Add a Dependency</button>
-                        </div>                         
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'edit')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'instance', 'delete')">Delete</button>
+                        </div>
+                        <label for="optionalInstanceParams" onclick="toggleAdvancedOptions()">Click Here for Advanced Options</label>
+                        <div id="optionalInstanceParams">
+                            <label for="ex_tags">Instance Tags</label>
+                            <p class="help-block">
+                                A list of tags to associate with the instance separated with | (e.g. tag1|tag2|tag3).
+                            </p> 
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="ex_tags" name="ex_tags" placeholder="(e.g. tag1|tag2|tag3)">
+                            </div>
+                            <label for="ex_metadata">Instance Metadata</label>
+                            <p class="help-block">
+                                A list of key value pairs to associate with the instance metadata separated with : and | (e.g. key1:value1|key2:value2).
+                            </p>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="ex_metadata" name="ex_metadata" placeholder="(e.g. key1:value1|key2:value2)">
+                            </div>
+                            <label for="ex_network">Instance Network</label>
+                            <p class="help-block">
+                                The name of the GCE network to associate with the instance.
+                            </p>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="ex_network" name="ex_network" placeholder="">
+                            </div>
+                            <label for="numLocalSSD">Number of Local SSD Drives</label>
+                            <p class="help-block">
+                                Local SSD drives will be named and mounted at /mnt/lssd-[0-4].
+                            </p>
+                            <div class="form-group">
+                                <select class="form-control" id="numLocalSSD" name="numLocalSSD">
+                                    <option>0</option>
+                                    <option>1</option>
+                                    <option>2</option>
+                                    <option>3</option>
+                                    <option>4</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="preemptible"><input type="checkbox" id="preemptible" name="preemptible" value="F" onchange="updatePreemptibleCheckbox()">&nbsp&nbspUse a Preemptible Instance?</label>
+                            </div>
+                        </div>
+                        <div></div>                         
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'edit', 'setup')">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'instance', 'delete', 'setup')">Delete</button>
                     </form>      
                     
                     <form id="instance_variable_form">
@@ -201,7 +250,7 @@
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addInstancesVar();">Specify Another Variable</button>
                         </div>  
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'variables')">Save Variables</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'variables', 'setup')">Save Variables</button>
                     </form>             
                 </div>
                 
@@ -259,8 +308,8 @@
                         </div>
                         <!-- <h4>Select an Initialization Source</h4>
                         <h4>Select an Shutdown Destination</h4> -->
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'save')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'disk', 'delete')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'save', 'setup')">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'disk', 'delete', 'setup')">Delete</button>
                     </form>      
                     
                     <form id="disk_variable_form">
@@ -291,7 +340,7 @@
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addDisksVar('','');">Specify Another Variable</button>
                         </div>  
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'variables')">Save</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'variables', 'setup')">Save</button>
                     </form>             
                 </div>
                 
@@ -339,8 +388,8 @@
                             </p> 
                             <textarea class="form-control" id="Command" name="Command" placeholder="e.g. echo hello"></textarea>
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'command', 'save')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'command', 'delete')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'command', 'save', 'setup')">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'command', 'delete', 'setup')">Delete</button>
                     </form>
                 </div>
                 
@@ -364,8 +413,8 @@
                         </div> 
                         <!-- <h4>Select an Initialization Source</h4>
                         <h4>Select an Shutdown Destination</h4> -->
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'image', 'save')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'image', 'delete', true)">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'image', 'save', 'setup')">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'image', 'delete', 'setup')">Delete</button>
                     </form>
                 </div>
                 
@@ -385,8 +434,8 @@
                             <label for="pemFileUpload">PEM File</label>
                             <input type="file" id="pemFileUpload" name="pemFileUpload">
                         </div>                   
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', false, 'pemFileUpload')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', true)">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', 'setup')">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', 'setup')">Delete</button>
                     </form>
                 </div>
             </div>

@@ -80,7 +80,18 @@ class User(orm.Base):
         if "admin" in self.role:
             return map(lambda u: u.name, User.getUsers(session=session))
         else: return ["none"]
-            
+
+    def getUserData(self):
+        workflowData = {wf.id: wf.dictForJSON() for wf in self.workflowtemplates}
+        imageData = {im.id: im.dictForJSON() for im in self.images}
+        if self.credentials != None:
+            credentialData = self.credentials.dictForJSON()
+        else: 
+            credentialData = {}
+        return {"workflows": workflowData, 
+                "images": imageData,
+                "credentials": credentialData}
+        
     @staticmethod
     def newUser(username, role, password, session):
         if User.findUser(username, session)==None:

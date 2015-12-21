@@ -7,9 +7,23 @@ Created on Nov 20, 2015
 # imports
 from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, Float,ForeignKey,backref,TextReader, joinedload_all
 from DDServerApp.ORM import BASE_DIR, Boolean
+from DDServerApp.ORM.Mappers import InstanceCommand
 import sys, time
 from Disk import Disk
 
+class InstanceDependencyRelation(orm.Base):
+    '''
+    This relation maps many instances to many instances. 
+    '''
+    child_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
+    parent_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
+
+class DiskInstanceLink(orm.Base):
+    '''
+    This relation maps many disks to many instances.
+    '''
+    disk_id = Column(Integer, ForeignKey('disk.id'), primary_key=True)
+    instance_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
 
 class Instance(orm.Base):
     '''
@@ -17,6 +31,11 @@ class Instance(orm.Base):
     '''
     id = Column(Integer,primary_key=True)
     name = Column(String, index=True)
+    dependency_names = Column(PickleType)
+    dependencies = relationship("Instance", secondary='instancedependencyrelation',
+                        primaryjoin=id==InstanceDependencyRelation.parent_id,
+                        secondaryjoin=id==InstanceDependencyRelation.child_id,
+                        backref="next_instances")
     node_params = Column(PickleType)
     read_disks = relationship(Disk, secondary='diskinstancelink')
     read_write_disks = relationship(Disk, secondary='diskinstancelink')
@@ -24,54 +43,91 @@ class Instance(orm.Base):
     boot_disk = relationship(Disk)
     created = Column(Boolean)
     destroyed = Column(Boolean)
-    script = Column(String)
-    scriptAsParam = Column(Boolean) # True if script past in as metadata
     failed = Column(Boolean)
     status = Column(String)
     rootdir = Column(String)
     ssh_error_counter = Column(Integer)
     preemptible = Column(Boolean)
-    activateStackdriver = Column(Boolean)
-    StackdriverAPIKey = Column(String)
     numLocalSSD = Column(Integer)
     localSSDInitSources = Column(PickleType)
     localSSDDests = Column(PickleType)
-    # no myDriver
-    # no node
-    # no log
+    command_dict = Column(PickleType)
+    machine_type = Column(String)
+    image_name = Column(String)
+    location = Column(String)
+    network = Column(String)
+    tagString = Column(String)
+    metadataString = Column(String)
+    image_id = Column(Integer, ForeignKey("image.id"))
+    image = relationship("Image", backref = "instances")
 
-    def __init__(self, name, node_params, depedencies, read_disks, read_write_disks, boot_disk, myDriver, script, log, 
-                 rootdir="/home/cmelton/", scriptAsParam=True, preemptible=True, StackdriverAPIKey="",
-                 activateStackDriver=False, numLocalSSD=0, localSSDInitSources="", localSSDDests="",
-                 session = None):
+    def __init__(self, name, machine_type, image, location, network, tagString,
+                 metadataString, dependency_names, read_disks, read_write_disks, 
+                 boot_disk, command_dict, rootdir="/home/cmelton/", preemptible=True, numLocalSSD=0, 
+                 localSSDInitSources="", localSSDDests=""):
         '''
         Constructor
         '''
         self.name=name
-        self.node_params=node_params
-        self.dependencyNames=depedencies
+        self.dependency_names=dependency_names
+        self.dependencies = []
         self.read_disks=read_disks
         self.read_write_disks=read_write_disks
         self.boot_disk=boot_disk
-        self.myDriver=myDriver
         self.created=False
         self.destroyed=False
-        self.script=script
         self.node=None
-        self.log=log
-        self.scriptAsParam=scriptAsParam
         self.failed=False
         self.printToLog("initialized instance class")
         self.status="not started"
         self.rootdir=rootdir
         self.ssh_error_counter = 0
         self.preemptible = preemptible
-        self.activateStackdriver = activateStackDriver
-        self.StackdriverAPIKey = StackdriverAPIKey
         self.numLocalSSD = numLocalSSD
         self.localSSDInitSources = localSSDInitSources
         self.localSSDDests = localSSDDests
-        self.parseScript(session)
+        self.command_dict = command_dict
+        self.machine_type = machine_type
+        self.image = image
+        self.location = location
+        self.network = network
+        self.tagString = tagString
+        self.metadataString = metadataString
+        self.node_params = self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
+
+    def buildNodeParams(self, machine_type, image_name, location, network, tags, metadata):
+        node_params={}
+        for param, val in [("size", machine_type), ("image", image_name), ("location", location),
+                           ("ex_network", network)]:
+            node_params[param]=val
+        # parse ex_tags
+        node_params["ex_tags"]=tags.split("|")
+        # parse ex_metadata and add to node params
+        node_params["ex_metadata"]={'items': []}
+        for pair in metadata.split("|"):
+            if pair!="" and ":" in pair:
+                key, value= pair.split(":", 1)
+                node_params["ex_metadata"]["items"].append({"key":key, "value":value})
+        self.node_params = node_params
+                  
+
+    # generates a list of commands from the command dictionary input
+    def parseCommandDict(self, startupCommands=[]):
+        newCommands = {}
+        # make commands
+        for id in self.command_dict:
+            newCommands[id] = InstanceCommand(self, self.command_dict[id]["command"], [], "main")
+        # set dependencies
+        for id in newCommands:
+            newCommands[id].dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
+
+    # given a dictionary of instances set dependencies using dependency_names
+    def setDependencies(self, instanceDict):
+        for name in self.dependency_names:
+            if name in instanceDict:
+                self.dependencies.append(instanceDict[name])
+            else:
+                self.printToLog("dependency name"+ name+ "wasn't found!!")
 
     # adds myDriver, instance, and log to instance
     def reinit(self, myDriver, log):
@@ -88,17 +144,22 @@ class Instance(orm.Base):
     def __repr__(self):
         return str(self)
 
+    # function to print text to the log file
+    def printToLog(self, text):
+        if "log" in self.__dict__ and self.log!=None:
+            output=self.name+"\t"+text
+            self.log.write(output)
+
+    # returns text with the header and values in tab delimitted format 
+    def toString(self):
+        tabDelim=self.tabDelimSummary()
+        return("\n".join([tabDelim["header"],tabDelim["values"]]))
+
     # update command data, this is built for data coming from a worker instance
     def updateCommandData(self, data):
         thiscommand = next(c for c in self.commands if c.id == data["id"])
         thiscommand.updateCommandData(data)
-        print "updated"
-        
-
-    # update the status of this instance
-    def updateStatus(self, instanceManager):
-        if self.status=="started" or self.status=="ssh error" or self.status=="not started":
-            self.__updateStatus(instanceManager)
+        self.printToLog("updated command data")
 
     # restarting instance by destroying and recreating
     def manual_restart(self):
@@ -124,55 +185,24 @@ class Instance(orm.Base):
         self.destroyed=False
         self.status="started"
 
-    # update node status and destroy if complete
-    def __updateStatus(self, instanceManager):
-        self.status = self.trycommand(instanceManager.getInstanceStatus, self.name)
-        if self.status == "ssh error":
-            self.ssh_error_counter +=1
-            self.printToLog("recurrent ssh error on "+self.name+", count="+str(self.ssh_error_counter))
-            if self.ssh_error_counter == 1: 
-                self.printToLog("setting status of "+self.name+" to gce error")
-                self.restart()
-            if self.ssh_error_counter == 4:
-                self.status = "gce error"
-        if self.status=="failed" or self.status == "gce error":
-            self.created=True
-            self.failed=True
-            if not self.destroyed:
-                self.destroy(instanceManager.instances, destroydisks=False)
-        if self.status=="complete":
-            self.created=True
-            self.failed=False
-            if self.node==None: self.destroyed=True
-            if not self.destroyed:
-                self.destroy(instanceManager.instances)
-
     # return boolean to indicate if instance has been started
     def started(self):
         return self.created
     
-    # wait for instance to be completed
-    def waitForCompletion(self, instanceManager):
-        if self.destroyed or not self.created: return
-        while self.status!="complete" and self.status!="failed":
-            time.sleep(60)
-            self.updateStatus(instanceManager)
-    
     # check to see if dependencies (instances required to complete before this one can start) have completed
-    def __dependenciesReady(self, jobs):
-        for d in self.dependencyNames:
-            if d in jobs:
-                if not jobs[d].status=="complete":
-                    self.printToLog(str(d)+" not ready")
-                    return False
+    def __dependenciesReady(self):
+        for d in self.dependencies:
+            if not d.status=="complete":
+                self.printToLog(str(d)+" not ready")
+                return False
         return True
 
     # check if instance is ready and if yes start job
-    def startIfReady(self, jobs):
+    def startIfReady(self):
         # if already run do nothing
         if self.status=="complete": return False
         # if dependencies not ready do nothing
-        if not self.__dependenciesReady(jobs): return False
+        if not self.__dependenciesReady(): return False
         # if not created create and not failed its ready so create
         if not self.created and not self.failed:
             self.create()
@@ -195,25 +225,6 @@ class Instance(orm.Base):
                 self.destroyed=False
                 self.status="started"
                 self.log.write(self.name+"is already created!!")
-
-    # return a dict with text for printing a tab delimited summary of this instance
-    def tabDelimSummary(self):
-        return {"header":"\t".join(["name", "node_params", "dependencyNames", "read_disks", 
-                                    "boot_disk", "myDriver", "created", "destroyed", 
-                                    "script", "node", "log", "scriptAsParam", "failed"]), 
-                "values":"\t".join(map(lambda x: str(x), [self.name, self.node_params, self.dependencyNames, self.read_disks, 
-                                                self.boot_disk, self.myDriver, self.created, self.destroyed, 
-                                                self.script, self.node, self.log, self.scriptAsParam, self.failed]))}
-
-    # function to print text to the log file
-    def printToLog(self, text):
-        output=self.name+"\t"+text
-        self.log.write(output)
-
-    # returns text with the header and values in tab delimitted format 
-    def toString(self):
-        tabDelim=self.tabDelimSummary()
-        return("\n".join([tabDelim["header"],tabDelim["values"]]))
     
     # code to run (on actual instance after boot) to initialize read/write disks, will copy disks contents to disk from some source
     def _initialize_disks(self):
@@ -260,9 +271,7 @@ class Instance(orm.Base):
     # code to run (on actual instance after boot) to set the active gcloud account
     def _setActiveGcloudAuthAccount(self):
         return "gcloud config set account "+self.myDriver.auth_account
-    
-
-    
+        
     def addCommandSequence(self, command_list, command_type, command_dependencies = [], session=None):
         from InstanceCommand import InstanceCommand
         new_commands = []
@@ -276,7 +285,7 @@ class Instance(orm.Base):
         return new_commands
 
     # parses the script and creates a list of commands
-    def parseScript(self, session=None):
+    def parseScript(self, script, session=None):
         allCommands = []
         # parse startup commands
         startup_commands = "\n".join([self._mountDisksScript(), self._setActiveGcloudAuthAccount(), 
@@ -286,7 +295,7 @@ class Instance(orm.Base):
         startup_commands = self.addCommandSequence(startup_commands, "startup", [], session)
         
         # parse commands
-        commands = self.script.split("\n")
+        commands = script.split("\n")
         # add commands
         commands = self.addCommandSequence(commands, "main", startup_commands, session)
         
@@ -300,23 +309,23 @@ class Instance(orm.Base):
                 "shutdown":shutdown_commands}
     
     
-    # package script in python script shell
-    # the StartupWrapper.py program executes the script, saves the output to google cloud storage and updates the project meta data on start and completion
-    def packageScript(self):
-        script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
-        shutdownscript = self._unmountDisksScript()
-        result = "\n#! /bin/bash"
-        if self.activateStackdriver: result += "\nsudo bash stack-install.sh --api-key="+self.StackdriverAPIKey
-        result += "\n/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/Startup.py --S \""+script.replace("\'", "'")+"\" --SD \""+shutdownscript.replace("\'", "'")+"\" --H "+self.rootdir+"StartupCommandHistoryv3.pickle --N "+self.name
-        return(result)
-
-    def packageScriptNew(self):
-        script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
-        shutdownscript = self._unmountDisksScript()
-        result = "\n#! /bin/bash"
-        if self.activateStackdriver: result += "\nsudo bash stack-install.sh --api-key="+self.StackdriverAPIKey
-        result += "\n/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/Startup.py --S \""+script.replace("\'", "'")+"\" --SD \""+shutdownscript.replace("\'", "'")+"\" --H "+self.rootdir+"StartupCommandHistoryv3.pickle --N "+self.name
-        return(result)
+#     # package script in python script shell
+#     # the StartupWrapper.py program executes the script, saves the output to google cloud storage and updates the project meta data on start and completion
+#     def packageScript(self):
+#         script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
+#         shutdownscript = self._unmountDisksScript()
+#         result = "\n#! /bin/bash"
+#         if self.activateStackdriver: result += "\nsudo bash stack-install.sh --api-key="+self.StackdriverAPIKey
+#         result += "\n/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/Startup.py --S \""+script.replace("\'", "'")+"\" --SD \""+shutdownscript.replace("\'", "'")+"\" --H "+self.rootdir+"StartupCommandHistoryv3.pickle --N "+self.name
+#         return(result)
+# 
+#     def packageScriptNew(self):
+#         script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
+#         shutdownscript = self._unmountDisksScript()
+#         result = "\n#! /bin/bash"
+#         if self.activateStackdriver: result += "\nsudo bash stack-install.sh --api-key="+self.StackdriverAPIKey
+#         result += "\n/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/Startup.py --S \""+script.replace("\'", "'")+"\" --SD \""+shutdownscript.replace("\'", "'")+"\" --H "+self.rootdir+"StartupCommandHistoryv3.pickle --N "+self.name
+#         return(result)
 
 
     
@@ -416,10 +425,10 @@ class Instance(orm.Base):
                 self.printToLog(str(func) + " Error: "+str(e)+", "+str(e.__dict__)+ " try #"+str(tries)) 
         return None
                 
+    @staticmethod
+    def findByName(session, name, user):
+        from DDServerApp.ORM.Mappers.Workflow import Workflow, InstanceWorkflowLink
+        iids=session.query(Instance).join(InstanceWorkflowLink).join(Workflow).filter(Instance.name==name).filter(Workflow.user_id==user.id).all()
+        if len(iids)==0: return None
+        else: return iids[0]  
 
-class DiskInstanceLink(orm.Base):
-    '''
-    This relation maps many disks to many instances.
-    '''
-    disk_id = Column(Integer, ForeignKey('disk.id'), primary_key=True)
-    instance_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)

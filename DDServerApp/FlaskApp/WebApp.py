@@ -14,15 +14,15 @@ if not path in sys.path:
 from flask import Flask, url_for, render_template, session, request, redirect, flash, Markup, jsonify
 from DDServerApp.ORM.Mappers import orm, User, UserUtilities
 from DDServerApp.ORM import BASE_DIR
-from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce
-
+from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Credentials
 
 
 # if '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/' in os.getcwd(): #=='/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring/FlaskApp':
 #     path = '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring'
 # else:
 #     path = '/var/www/exact/ClinicalTrialStructuring'
-#     
+#   
+  
 path = os.path.join(os.getcwd().split("DDServerApp")[0], "DDServerApp")
 if not path in sys.path:
     print path
@@ -45,12 +45,14 @@ from flask_oauthlib.provider import OAuth1Provider
 
 
 app = Flask(__name__)
+app.config['PEMFILEFOLDER'] = os.path.join(BASE_DIR, "PemFiles")
 Bootstrap(app)
 oauth = OAuth1Provider(app)
 
 app.secret_key='\x9f\x058.\x1a\xde\x7fn\xc6G\x08\xd0m|\xdd\xd0\xf6)\x80x8*+\xc5'
 SESSION= orm.loadSession()
 SESSION.rollback()
+orm.Base.metadata.create_all()
 app.config["JSON_SORT_KEY"] = False
 app.config["OAUTH1_PROVIDER_REALMS"]=[""]
 app.config["OAUTH1_PROVIDER_ENFORCE_SSL"] = False
@@ -62,14 +64,40 @@ def index():
     '''
     This is the main page. It morphs into the users page when the user is logged in.
     '''
-    if 'username' in session:
-        user = User.findUser(session["username"], SESSION)
+    user, redirect = getUser()
+    if redirect!=None: return redirect
     return render_template('index_modern.html')
+
+@app.route('/setup')
+def setup():
+    '''
+    This is the main page. It morphs into the users page when the user is logged in.
+    '''
+    user, redirect = getUser()
+    if redirect!=None: return redirect
+    return render_template('setup_modern.html')
+
+@app.route('/launcher')
+def launcher():
+    '''
+    This is the main page. It morphs into the users page when the user is logged in.
+    '''
+    user, redirect = getUser()
+    if redirect!=None: return redirect
+    return render_template('launcher_modern.html')
+
+@app.route('/dashboard')
+def dashboard():
+    '''
+    This is the main page. It morphs into the users page when the user is logged in.
+    '''
+    user, redirect = getUser()
+    if redirect!=None: return redirect
+    return render_template('dashboard_modern.html')
 
 @app.route('/about', methods=['GET'])
 def about():
     return render_template('about_modern.html')
-
 
 @oauth.clientgetter
 def load_client(client_key):
@@ -220,7 +248,290 @@ def save_nonce(client_key, timestamp, nonce, request_token, access_token):
 #     confirm = request.form.get('confirm', 'no')
 #     return confirm == 'yes'
 
+def parseVariables(d, varname="varname", varvalue = "varvalue"):
+    varnames = [v for v in d.keys() if varname in v]
+    varvalues = [v for v in d.keys() if varvalue in v]
+    pairids = [n.split("_")[1] for n in varnames]
+    result = {}
+    for id in pairids:
+        name = ""
+        value = ""
+        for v in varnames: 
+            if v.split("_")[1] == id: name = v
+        for v in varvalues: 
+            if v.split("_")[1] == id: value = v
+        result[d[name]]=d[value]
+    return result
 
+def getID(name):
+    if ":" not in str(name):
+        return None
+    return name.split(":")[0]
+
+def workflowLauncher(user, data, stop):
+    wfid = getID(request.form["launcherWorkflowSelect"])
+    wf = WorkflowTemplate.findByID(SESSION, wfid, user)
+    if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
+    if not stop:
+        wf.startWorkflow()
+    else:
+        wf.stopWorkflow()
+    return {"updates": {"active workflows": user.getActiveWorkflows()},  
+            "message": "started workflow"}
+
+def newWorkflow(user, data, new, delete):
+    if delete:
+        wfid = getID(request.form["workflowWorkflowsSelect"])
+        WorkflowTemplate.delete(SESSION, wfid, user)
+        result = {"updates": {}, "message": "deleted workflow"}
+    elif new:
+        nwf = WorkflowTemplate(data["newWorkflowName"], user)
+        SESSION.add(nwf)
+        SESSION.commit()
+        result = {"updates":{"workflows":{str(nwf.id):nwf.dictForJSON()}},
+                  "message": "added new workflow"}
+    else:
+        wfid = getID(request.form["workflowVarWorkflowsSelect"])
+        wf = WorkflowTemplate.findByID(SESSION, wfid, user)
+        print user.name, user.id
+        if wf == None: return {"updates": {}, "message": "user permissions error"}        
+        newvars = parseVariables(request.form)
+        wf.updateVarDict(newvars, user)
+        result = {"updates":{"workflows":{str(wf.id):wf.dictForJSON()}},
+                  "message": "updated workflow"}
+    return result
+
+def saveImage(user, data, delete):
+    imageID = getID(data["imageImagesSelect"])
+    name = data["imageNameOnImageForm"]
+    authAccount = data["authAccount"]
+    if imageID == None:
+        image = Image(name, authAccount, user)
+        SESSION.add(image)
+        SESSION.commit()
+    elif delete:
+        Image.delete(SESSION, imageID, user)
+        return {"updates": {}, "message": "deleted image"}
+    else:
+        image = Image.findByID(SESSION, imageID, user)
+        if image != None:
+            image.updateValues(name, authAccount, user)
+            SESSION.add(image)
+            SESSION.commit()
+        else:
+            return {"updates": {}, "message": "user permissions error on image"}
+#             image = Image(name, authAccount, user) 
+    result = {"updates":{"images":{str(image.id):image.dictForJSON()}},
+              "message": "updated image"}
+    return result
+
+def saveDisk(user, data, variables, delete):
+    if delete:
+        diskID = getID(data["diskDisksSelect"])
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["diskWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
+        if diskID!=None:
+            DiskTemplate.delete(SESSION, diskID, user)
+    elif variables:
+        diskID = getID(data["diskVarDisksSelect"])
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["diskVarWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}   
+        disk = DiskTemplate.findByID(SESSION, diskID, user)
+        if disk==None: return {"updates": {}, "message": "user permissions error on disk"}
+        disk.updateVarDict(parseVariables(data), user)
+    else:
+        diskID = getID(data["diskDisksSelect"])
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["diskWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
+        name = data["diskName"]
+        image = Image.findByID(SESSION, getID(data["diskImagesSelect"]), user)
+        if image == None: return {"updates": {}, "message": "user permissions error on image"}
+        diskSize = data["diskSize"]
+        diskType = data["diskTypeSelector"]
+        location = data["diskLocationSelector"]
+        print "diskID", diskID
+        if diskID == None:
+            disk = DiskTemplate(name, workflow, image, diskSize, diskType, location)
+        else:
+            disk = DiskTemplate.findByID(SESSION, diskID, user)
+            if disk != None:
+                disk.updateValues(name, workflow, image, diskSize, diskType, location, user)
+            else:
+                return {"updates": {}, "message": "user permissions error on disk"}
+#                 disk = DiskTemplate(name, workflow, image, diskSize, diskType, location)
+    SESSION.add(workflow)
+    SESSION.commit()
+    result = {"updates":{"workflows":{str(workflow.id):workflow.dictForJSON()}},
+              "message": "updated disk"}
+    return result
+
+def allowedFile(filename):
+    return len(filename)>4 and filename[-4:]==".pem"
+
+def saveCredentials(user, data, files, delete):
+#     print "files", files
+    name = data["credentialsName"]
+    serviceAccount = data["serviceAccountEmail"]
+    f = request.files['pemFileUpload']
+#     print f, f.__dict__.keys()
+    if f and allowedFile(f.filename):
+        filename = str(user.id)+".pem"
+        f.save(os.path.join(app.config['PEMFILEFOLDER'], filename))
+        pemFileLocation = os.path.join(app.config['PEMFILEFOLDER'], filename)
+    else:
+        pemFileLocation = ""
+#     print name, serviceAccount, pemFileLocation
+    if user.credentials == None:
+        creds = Credentials(name, serviceAccount, pemFileLocation, user)
+        SESSION.add(creds)
+        SESSION.commit()
+    else:
+        creds = user.credentials
+        if delete:
+            creds.updateValues("", "", "")
+        else:
+            creds.updateValues(name, serviceAccount, pemFileLocation)
+    return {"updates": {"credentials": creds.dictForJSON()},
+            "message": "updated credentials"}
+
+def saveCommand(user, data, delete):
+    workflow = WorkflowTemplate.findByID(SESSION, getID(data["workflowInCommandForm"]), user)
+    if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
+    if delete:
+        cid = getID(data["commandInCommandForm"])
+        if cid!=None:
+            CommandTemplate.delete(SESSION, cid, user)    
+    else:
+        instance = InstanceTemplate.findByID(SESSION, getID(data["instanceInCommandForm"]), user)
+        if instance == None: return {"updates": {}, "message": "user permissions error on instance"}
+        name = data["CommandName"]
+        commandText = data["Command"]
+        commandID = getID(data["commandInCommandForm"])
+        dependencies = [CommandTemplate.findByID(SESSION, cid, user) for cid in list(set([getID(idname) for idname in data.getlist("commandDependenciesSelect")]))]
+        if None in dependencies: return {"updates": {}, "message": "user permissions error on command dependencies"}
+        ## edit old command or make new command
+        if commandID != None:
+            command = CommandTemplate.findByID(SESSION, commandID, user)
+            if command == None: 
+                return {"updates": {}, "message": "user permissions error on command"}
+            command.updateValues(instance, name, commandText, dependencies)
+        else:
+            command = CommandTemplate(instance, name, commandText, dependencies)
+            SESSION.add(command)
+            SESSION.commit()
+
+    result = {"updates":{"workflows":{str(workflow.id):workflow.dictForJSON()}},
+              "message": "updated command"}
+    SESSION.add(workflow)
+    SESSION.commit()
+    return result
+        
+
+def saveInstance(user, data, variables, delete):
+    if delete:
+        print "deleting"
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
+        iid = getID(data["instanceInstancesSelect"])
+        if iid!=None:
+            print iid
+            InstanceTemplate.delete(SESSION, iid, user)
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
+    elif variables:
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceVarWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error"}
+        print "got workflow"
+        instID = getID(data["instanceVarInstancesSelect"])
+        if instID == None: return {"updates": {}, "message": "instance id error"}
+        instance = InstanceTemplate.findByID(SESSION, instID, user)
+        print "got instance"
+        if instance == None: return {"updates": {}, "message": "user permissions error"}
+        instance.updateVarDict(parseVariables(data), user)
+        print "updated vars"
+    else:
+        workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
+        if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
+        name = data["instanceName"]
+        machineType = data["instanceMachineTypeSelector"]
+        location = data["instanceLocationSelector"]
+        bootDisk = DiskTemplate.findByID(SESSION, getID(data["instanceBootDiskSelect"]), user)
+        if bootDisk==None: return {"updates": {}, "message": "user permissions error on boot disk"}
+        readDisks = [DiskTemplate.findByID(SESSION, did, user) for did in list(set([getID(idname) for idname in data.getlist("instanceReadDisksSelect")]))]
+        if None in readDisks: return {"updates": {}, "message": "user permissions error on read disks"}
+        readWriteDisks = [DiskTemplate.findByID(SESSION, did, user) for did in list(set([getID(idname) for idname in data.getlist("instanceReadWriteDisksSelect")]))]
+        if None in readWriteDisks: return {"updates": {}, "message": "user permissions error on read/write disks"}
+        instID = getID(data["instanceInstancesSelect"])
+        dependencies = [InstanceTemplate.findByID(SESSION, iid, user) for iid in list(set([getID(idname) for idname in data.getlist("instanceDependenciesSelect")]))]
+        if None in dependencies: return {"updates": {}, "message": "user permissions error on instance dependencies"}
+        print "test"
+        ex_tags = data["ex_tags"]
+        print ex_tags
+        ex_metadata = data["ex_metadata"]
+        print ex_metadata
+        ex_network = data["ex_network"]
+        print ex_network
+        numLocalSSD = data["numLocalSSD"]
+        print numLocalSSD
+        if "preemptible" not in data:
+            preemptible = False
+        else:
+            preemptible = (data["preemptible"]=="T")
+        print preemptible
+        ## edit old instance or make new instance
+        if instID != None:
+            print "updating instance"
+            instance = InstanceTemplate.findByID(SESSION, instID, user)
+            if instance == None: 
+#                 instance = InstanceTemplate(name, machineType, location, bootDisk, readDisks, 
+#                                         readWriteDisks, dependencies, workflow)
+                return {"updates": {}, "message": "user permissions error on instance"}
+            instance.updateValues(name, machineType, location, bootDisk, readDisks, 
+                                  readWriteDisks, dependencies, ex_tags, ex_metadata,
+                                  ex_network, numLocalSSD, preemptible)
+        else:
+            print "adding instance"
+            instance = InstanceTemplate(name, machineType, location, bootDisk, readDisks, 
+                                        readWriteDisks, dependencies, workflow, ex_tags, 
+                                        ex_metadata, ex_network, numLocalSSD, preemptible)
+    SESSION.add(workflow)
+    SESSION.commit()
+    result = {"updates":{"workflows":{str(workflow.id):workflow.dictForJSON()}},
+              "message": "updated instance"}
+    return result  
+
+@app.route("/api/_getuserdata", methods=['GET'])
+def getUserData():
+    user = getCurrentUser()
+    print user.getUserData()
+    return jsonify({"data": user.getUserData(),
+            "message": "updated data"})
+
+@app.route("/api/_workflows", methods=['POST'])
+def workflowEditor():
+    print request.form
+    print request.form.getlist
+    user = getCurrentUser()
+    updatetype = request.form["submitType"]
+    edittype = request.form["editType"]
+    result = {"message":"test message", "updates":"test updates"}
+    formData = request.form
+    print updatetype
+    if updatetype=="workflow":
+        result = newWorkflow(user, formData, edittype=="new", edittype=="delete")
+    elif updatetype=="disk":
+        result = saveDisk(user, formData, edittype=="variables", edittype=="delete")
+    elif updatetype=="image":
+        result = saveImage(user, formData, edittype=="delete")
+    elif updatetype=="instance":
+        result = saveInstance(user, formData, edittype=="variables", edittype=="delete")
+    elif updatetype=="command":
+        result = saveCommand(user, formData, edittype=="delete")
+    elif updatetype=="credentials":
+        result = saveCredentials(user, formData, request.files, edittype=="delete")
+    elif updatetype=="launchworkflow":
+        result = workflowLauncher(user, formData, edittype=="stop")
+    print result
+    return jsonify(result)
 
 @app.route('/oauth/access_token')
 @oauth.access_token_handler
@@ -320,88 +631,89 @@ def commands():
 #     rows = map(lambda drug: ("dr"+str(drug.id), drug.getGvisTableData(trialannotationset.id)["data"]), toshow)    
 #     return getTableJSONData(description, rows)
 # 
-# def getUser(redirect_dest="index"):
-#     user, redirect_return = None, None, None, None
-#     if 'username' not in session:
-#         flash("You requested a restricted access page. Please login.")
-#         print "You requested a restricted access page. Please login."
-#         redirect(url_for('login'))
-#         redirect_return = redirect(url_for('login'))
-#     else:
-#         user = User.findUser(session["username"], SESSION)
-#     return user, redirect_return
+def getUser(redirect_dest="index"):
+    user, redirect_return = None, None
+    if 'username' not in session:
+        flash("You requested a restricted access page. Please login.")
+        print "You requested a restricted access page. Please login."
+        redirect(url_for('login'))
+        redirect_return = redirect(url_for('login'))
+    else:
+        user = User.findUser(session["username"], SESSION)
+    return user, redirect_return
 
-# @app.route('/newuser', methods=['GET', 'POST'])
-# def newuser():
-#     message = ""
-#     if request.method == 'POST':
-#         username = request.form['login']
-#         password = request.form['password']
-#         password_confirmation = request.form['passwordconfirmation']
-#         role = request.form['role']
-#         if password!=password_confirmation:
-#             message = "error: password and password confirmation don't match"
-#         else:
-#             user = User.newUser(username, role, password, SESSION)
-#             if user == None:
-#                 message = "error: username already in use"
-#             else:
-#                 session['username'] = user.name
-#                 if "admin" in user.role: 
-#                     session["admin"]=True
-#                 else: 
-#                     session["admin"]=False
-#             return redirect(url_for('index'))
-#     return render_template('newuser_modern.html', error=message)
-# 
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     '''
-#     This page allows user to login to see his/her patients or to upload new patient data.
-#     '''
-#     if "WEBAUTH_USER" in request.environ:
-#         username = request.environ["WEBAUTH_USER"]
-#         print username
-#         user = User.findUser(username, SESSION) 
-#         
-#         if user == None: 
-#             user = User(username, "doctor", "password")
-#             orm.Base.metadata.create_all()
-#             PatientAndUserUtilities.addAllToDB(SESSION)
-#         session['username'] = username
-#         if "admin" in user.role: 
-#             session["admin"]=True
-#         else: 
-#             session["admin"]=False
-#         return redirect(url_for('index'))
-#          
-#     if request.method == 'POST':
-#         username = request.form['login']
-#         password = request.form['password']
-#         user = User.login(username, password, SESSION)
-#         error = None
-#         if isinstance(user, basestring):
-#             error = user
-#             flash(error)
-#         else:
-#             session['username'] = user.name
-#             if "admin" in user.role: 
-#                 session["admin"]=True
-#             else: 
-#                 session["admin"]=False
-#             flash('You were successfully logged in')
-#             return redirect(url_for('index'))
-#         return render_template('login_modern.html', error=error)
-#     return render_template('login_modern.html')
-# 
-# @app.route('/logout')
-# def logout():
-#     '''
-#     This page allows the user to logout.
-#     '''
-#     # remove the username from the session if it's there
-#     session.pop('username', None)
-#     return redirect(url_for('index'))
+@app.route('/newuser', methods=['GET', 'POST'])
+def newuser():
+    message = ""
+    if request.method == 'POST':
+        username = request.form['login']
+        password = request.form['password']
+        password_confirmation = request.form['passwordconfirmation']
+        role = request.form['role']
+        if password!=password_confirmation:
+            message = "error: password and password confirmation don't match"
+        else:
+            user = User.newUser(username, role, password, SESSION)
+            if user == None:
+                message = "error: username already in use"
+            else:
+                session['username'] = user.name
+                if "admin" in user.role: 
+                    session["admin"]=True
+                else: 
+                    session["admin"]=False
+            return redirect(url_for('index'))
+    return render_template('newuser_modern.html', error=message)
+ 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    '''
+    This page allows user to login to see his/her patients or to upload new patient data.
+    '''
+    if "WEBAUTH_USER" in request.environ:
+        username = request.environ["WEBAUTH_USER"]
+        print username
+        user = User.findUser(username, SESSION) 
+         
+        if user == None: 
+            user = User(username, "doctor", "password")
+            orm.Base.metadata.create_all()
+            SESSION.add_all([user])
+            SESSION.commit()
+        session['username'] = username
+        if "admin" in user.role: 
+            session["admin"]=True
+        else: 
+            session["admin"]=False
+        return redirect(url_for('index'))
+          
+    if request.method == 'POST':
+        username = request.form['login']
+        password = request.form['password']
+        user = User.login(username, password, SESSION)
+        error = None
+        if isinstance(user, basestring):
+            error = user
+            flash(error)
+        else:
+            session['username'] = user.name
+            if "admin" in user.role: 
+                session["admin"]=True
+            else: 
+                session["admin"]=False
+            flash('You were successfully logged in')
+            return redirect(url_for('index'))
+        return render_template('login_modern.html', error=error)
+    return render_template('login_modern.html')
+
+@app.route('/logout')
+def logout():
+    '''
+    This page allows the user to logout.
+    '''
+    # remove the username from the session if it's there
+    session.pop('username', None)
+    return redirect(url_for('index'))
 #     
 # if app.debug is not True:   
 #     import logging

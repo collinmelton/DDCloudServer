@@ -7,7 +7,7 @@ Created on Nov 20, 2015
 # imports
 from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, Float,ForeignKey,backref
 from DDServerApp.ORM import Boolean, DateTime
-from Instance import Instance
+# from DDServerApp.ORM.Mappers import Instance
 import pickle, json, subprocess, datetime, time, math, pwd, os, psutil
 from threading import Thread, Event
 
@@ -91,7 +91,7 @@ class InstanceCommand(orm.Base):
     id = Column(Integer,primary_key=True)
     command = Column(String, index=True)
     instance_id = Column(Integer, ForeignKey("instance.id"))
-    instance = relationship(Instance, backref=backref('commands'))
+    instance = relationship("Instance", backref=backref('commands'))
     command_dependencies = relationship("InstanceCommand", secondary='commanddependencyrelation',
                             primaryjoin=id==CommandDependencyRelation.parent_id,
                             secondaryjoin=id==CommandDependencyRelation.child_id,
@@ -315,7 +315,13 @@ class InstanceCommand(orm.Base):
         Returns a list of the first commands to run given dependencies in commands.
         '''
         return [command for command in commands if all([cd not in commands for cd in command.command_dependencies])]
-        
+
+    @staticmethod
+    def findByCommand(session, command, user):
+        from DDServerApp.ORM.Mappers.Workflow import Workflow, Instance, InstanceWorkflowLink
+        iids=session.query(InstanceCommand).join(Instance).join(InstanceWorkflowLink).join(Workflow).filter(InstanceCommand.command==command).filter(Workflow.user_id==user.id).all()
+        if len(iids)==0: return None
+        else: return iids[0]  
 
 class CommandPerformance(orm.Base):
     '''

@@ -1,0 +1,73 @@
+<!doctype html>
+{% extends "layoutmodern.html" %}
+
+{% block body %}
+
+
+<script src="/static/assets/customjs/custom.js"></script>
+
+<script>
+
+$(document).ready(function(){
+    // this code sets the write view on startup
+    toggleView("workflows_section");
+    $(".nav li").on("click", function() {
+        $(".nav li").removeClass("active");
+        $(this).addClass("active");
+    });
+    getUserData(updatePageElements, "launcher");
+});
+
+</script>
+
+<title>Workflow Editor</title>
+
+
+
+<!-- Content -->
+<div id="container">
+{% if not session.username %}
+  
+    <!--  #main-content (Center) -->
+    <div id="content" class="col-md-12" role="main"> <!-- InstanceBeginEditable name="content_main" -->
+      <h1 class="page-header">Please Login</h1>
+      <!-- InstanceEndEditable --> 
+    </div>
+
+{% else %}
+    <!-- <script type="text/javascript" src="https://www.google.com/jsapi"></script>     -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="main">
+                <h1 class="page-header">Workflow Launcher</h1>
+                <div id="launcher_section">
+                    <h3 class="page-header">Launch Workflow</h3>
+                    <form id="workflows_form">
+                        <div class="form-group">
+                            <label for="launcherWorkflowSelect">Select a Workflow</label>
+                            <select class="form-control", id="launcherWorkflowSelect" name="launcherWorkflowSelect">
+                            </select>
+                        </div>
+                        <button type="button" onclick="submitForm(event, 'launchworkflow', 'launch')" class="btn btn-primary">Launch</button>
+                    </form>
+                    <h3 class="page-header">Stop Workflow</h3>
+                    <form id="active_workflows_form">
+                        <div class="form-group">
+                            <label for="activeWorkflowSelect">Select a Workflow</label>
+                            <select class="form-control", id="activeWorkflowSelect" name="activeWorkflowSelect">
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'launchworkflow', 'stop')">Stop</button>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+{% endif %}
+</div>
+<!-- #content--> 
+{% endblock %}
+

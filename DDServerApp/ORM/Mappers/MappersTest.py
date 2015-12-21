@@ -4,7 +4,7 @@ Created on Nov 30, 2015
 @author: cmelton
 '''
 import unittest
-from DDServerApp.ORM.Mappers import orm, User, InstanceCommand, Client, Instance, AccessToken
+from DDServerApp.ORM.Mappers import orm, User, InstanceCommand, Client, Instance, AccessToken, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Workflow, Disk
 from DDServerApp.Utilities.JobAndDiskFileReader import JobAndDiskFileReader
 from DDServerApp.Utilities.LogFile import LogFile
 from DDServerApp.Utilities.GCEManager import GCEManager
@@ -35,45 +35,210 @@ class Test(unittest.TestCase):
 #         SESSION.add_all([auser])
 #         SESSION.commit()
 
-    def makeTestInstanceWithSimpleCommands(self):
-        auser = User.findUser("Jane", SESSION)
-        if auser ==None:
-            auser = User("Jane", "user", "password")
-        log = LogFile("/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/DDCloudServer/Data/TestFiles/testLog.txt")
-        myDriver = GCEManager("875996339847-nv3l8p9pp4ervtpsg1gbpbabktd619db@developer.gserviceaccount.com", 
-                              "/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/DDCloudServer/Data/TestFiles/GCP_SnyderProject.pem",
-                              "875996339847-compute@developer.gserviceaccount.com", 
-                              project="gbsc-gcp-lab-snyder")
+    def getUser(self):
+        user = User.findUser("Jane", SESSION)
+        if user ==None:
+            user = User("Jane", "user", "password")
+        return user
+    
+    def getWorkflowTemplate(self):
+        user = self.getUser()
+        wft = WorkflowTemplate.findByName(SESSION, "test_workflow_template", user)
+        if wft==None:
+            wft = WorkflowTemplate("test_workflow_template", user, workflowVars={"$1":"collin"})
+        return wft
+    
+    def getImage(self):
+        user = self.getUser()
+        image = Image.findByName(SESSION, "test_image", user)
+        if image==None:
+            image = Image("test_image", "875996339847-compute@developer.gserviceaccount.com", "/home/cmelton/", user)
+        return image
+    
+    def testWorkflowTemplate(self):
+        wft = self.getWorkflowTemplate()
+        self.assertTrue(wft != None, "error generating workflow template")
+    
+    def testImage(self):
+        image = self.getImage()
+        self.assertTrue(image != None, "error generating image")
         
-        # create instance
-        instance1 = Instance("test", "", "", [], [], None, myDriver, "echo hello\nsleep 10\necho goodbye", log, session=SESSION)
-        instance1.commands = []
-        # create simple commands
-        command1 = InstanceCommand(instance1, "echo hello1\nsleep 15", [], "main")
-        command2 = InstanceCommand(instance1, "echo hello2\nsleep 15", [command1], "main")
-        return instance1
-#         SESSION.add_all([instance1])
-#         SESSION.commit()
+    def getBootDiskTemplate(self, workflow=None):
+        if workflow==None: workflow = self.getWorkflowTemplate()
+        image = self.getImage()
+        user = self.getUser()
+        disk = DiskTemplate.findByName(SESSION, "test_boot_disk_template", user)
+        if disk == None:
+            disk = DiskTemplate("test_boot_disk_template", workflow, image, 10, "pd-standard", "us-central1-a")
+        return disk
+    
+    def getReadDiskTemplates(self, workflow=None):
+        if workflow==None:
+            workflow = self.getWorkflowTemplate()
+        image = self.getImage()
+        user = self.getUser()
+        disk = DiskTemplate.findByName(SESSION, "test_read_disk_template", user)
+        if disk == None:
+            disk = DiskTemplate("test_read_disk_template", workflow, image, 100, "pd-standard", "us-central1-a")
+        return [disk]
+    
+    def getReadWriteDiskTemplates(self, workflow=None):
+        if workflow==None: workflow = self.getWorkflowTemplate()
+        image = self.getImage()
+        user = self.getUser()
+        disk = DiskTemplate.findByName(SESSION, "test_read_write_disk_template", user)
+        if disk == None:
+            disk = DiskTemplate("test_read_write_disk_template", workflow, image, 100, "pd-standard", "us-central1-a")
+        return [disk]
+    
+    def testDiskTemplate(self):
+        disk = self.getBootDiskTemplate()
+        self.assertTrue(disk!=None, "error generating disk template")
+        
+    def getInstanceTemplate(self, workflow=None):
+        if workflow==None: workflow = self.getWorkflowTemplate()
+        user = self.getUser()
+        it = InstanceTemplate.findByName(SESSION, "test_instance_template", user)
+        if it==None:
+            it = InstanceTemplate("test_instance_template", "f1-micro", "us-central1-a", self.getBootDiskTemplate(workflow=workflow),
+                                  self.getReadDiskTemplates(workflow=workflow), self.getReadWriteDiskTemplates(workflow=workflow), 
+                                  [], workflow, "tag1|tag2", "key1:value1|key2:value2", "", 1, True)
+        return it
+    
+    def testInstanceTemplate(self):
+        it = self.getInstanceTemplate()
+        self.assertTrue(it!=None, "error generating instance template")
+        
+    def getCommandTemplate(self, command_name, dependencies=[], instance=None):
+        if instance==None: instance = self.getInstanceTemplate()
+        user = self.getUser()
+        ct = CommandTemplate.findByName(SESSION, command_name, user)
+        if ct==None:
+            ct = CommandTemplate(instance, command_name, "echo hello", dependencies)
+        return ct
+    
+    def testCommandTemplate(self):
+        ct1 = self.getCommandTemplate("test_command_1", [])
+        self.assertTrue(ct1 != None, "error generating command template")
+    
+    def getWorkflow(self, wft=None):
+        if wft==None: wft = self.getWorkflowTemplate()
+        user = self.getUser()
+        wf = Workflow.findByName(SESSION, "test_workflow", user)
+        if wf == None:
+            wf = Workflow("test_workflow", wft, user)
+        return wf
+    
+    def testWorkflow(self):
+        wf = self.getWorkflow()
+        self.assertTrue(wf != None, "error generating workflow")
+    
+    def getDisk(self, disk_name):
+        user = self.getUser()
+        disk = Disk.findByName(SESSION, disk_name, user)
+        if disk==None:
+            disk = Disk(disk_name, 10, "us-central1-a", snapshot=None, image=None, disk_type='pd-standard', 
+                        init_source="", shutdown_dest="")
+        return disk
+    
+    def getBootDisk(self):
+        return self.getDisk("test_boot_disk") 
+    
+    def getReadDisk(self):
+        return self.getDisk("test_read_disk")
+    
+    def getReadWriteDisk(self):
+        return self.getDisk("test_read_write_disk")
+    
+    def testDisk(self):
+        disk = self.getBootDisk()
+        self.assertTrue(disk!=None, "error creating disk")
+    
+    def getInstance(self):
+        user = self.getUser()
+        inst = Instance.findByName(SESSION, 'test_instance', user)
+        dependency_names=[]
+        command_dict = {'1': {'dependencies': [], 'command': u"echo 'hello'\r\nsleep 10", 'id': '1', 'name': u'Command 1'}, '2': {'dependencies': ['1'], 'command': u"echo 'hello 2'", 'id': '2', 'name': u'Command 2'}}
+        inst = Instance.findByName(SESSION, 'test_instance', user)
+        if inst == None:
+            inst = Instance('test_instance', "f1-micro", self.getImage(), "us-central1-a", "", 
+                            "tag1|tag2", "key1:value1|key2:value2", dependency_names, 
+                            [self.getReadDisk()], [self.getReadWriteDisk()], self.getBootDisk(), 
+                            command_dict, rootdir="/home/cmelton/", preemptible=True, numLocalSSD=0, 
+                            localSSDInitSources="", localSSDDests="")
+        return inst
+    
+    def testInstance(self):
+        inst = self.getInstance()
+        self.assertTrue(inst!=None, "error generating instance")
+    
+    def getCommand(self):
+        user = self.getUser()
+        instance = self.getInstance()
+        command = "echo 'test!'"
+        c = InstanceCommand.findByCommand(SESSION, command, user)
+        if c == None:
+            c = InstanceCommand(instance, command, [], "main")
+        return c
+    
+    def testCommand(self):
+        command = self.getCommand()
+        self.assertTrue(command!=None, "error generating command")
+    
+    def testWorkflowToDisksAndInstances(self):
+        workflowtemplate = self.getWorkflowTemplate()
+        instanceTemplate = self.getInstanceTemplate(workflow=workflowtemplate)
+        print workflowtemplate.instancetemplates
+        print workflowtemplate.disktemplates
+        commandTemplate = self.getCommandTemplate("test command", [], instanceTemplate)
+        workflow = self.getWorkflow(wft=workflowtemplate)
+        disks = workflow.createDisksInNamedDict()
+        self.assertTrue(type(disks.values()[0])==Disk, "error generating disks from workflow")
+        instances = workflow.createInstancesInNamedDict(disks)
+        self.assertTrue(type(instances.values()[0])==Instance, "error generating instances from workflow")
+        # workflow.initDisksAndInstances
+    
+    def testWorkflowToDisks(self):
+        pass 
+    
 
-    def testClient(self):
-        auser = User.findUser("Jane", SESSION)
-        if auser ==None:
-            auser = User("Jane", "user", "password")
-        client_props = {'client_secret': u'MQWsHSVWyCIqZhIeZ0doOetHI', 'client_key': u'x1LofvxeO1PVaxivWFF78aCU7'}
-        c = Client.findFirst(client_props["client_key"], SESSION)
-        if c==None:
-            instance = self.makeTestInstanceWithSimpleCommands()
-            # need to add
-            print "couldn't find client"
-            c = Client("test", "a test client", auser, ["full"], [], instance)
-            SESSION.add_all([c])
-            SESSION.commit()
-            ac = c.createAccessToken(SESSION)
-        ac = AccessToken.findFirst(c.client_key, None, SESSION)
-        SESSION.add_all([ac])
-        SESSION.commit()
-        print ac
-        print c.getClientCredentials()
+#     def makeTestInstanceWithSimpleCommands(self):
+#         auser = self.getUser()
+#         log = LogFile("/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/DDCloudServer/Data/TestFiles/testLog.txt")
+#         myDriver = GCEManager("875996339847-nv3l8p9pp4ervtpsg1gbpbabktd619db@developer.gserviceaccount.com", 
+#                               "/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/DDCloudServer/Data/TestFiles/GCP_SnyderProject.pem",
+#                               "875996339847-compute@developer.gserviceaccount.com", 
+#                               project="gbsc-gcp-lab-snyder")
+#         
+#         # create instance
+#         instance1 = Instance("test", "", "", [], [], None, myDriver, "echo hello\nsleep 10\necho goodbye", log, session=SESSION)
+#         instance1.commands = []
+#         # create simple commands
+#         command1 = InstanceCommand(instance1, "echo hello1\nsleep 15", [], "main")
+#         command2 = InstanceCommand(instance1, "echo hello2\nsleep 15", [command1], "main")
+#         return instance1
+# #         SESSION.add_all([instance1])
+# #         SESSION.commit()
+# 
+#     def testClient(self):
+#         auser = User.findUser("Jane", SESSION)
+#         if auser ==None:
+#             auser = User("Jane", "user", "password")
+#         client_props = {'client_secret': u'MQWsHSVWyCIqZhIeZ0doOetHI', 'client_key': u'x1LofvxeO1PVaxivWFF78aCU7'}
+#         c = Client.findFirst(client_props["client_key"], SESSION)
+#         if c==None:
+#             instance = self.makeTestInstanceWithSimpleCommands()
+#             # need to add
+#             print "couldn't find client"
+#             c = Client("test", "a test client", auser, ["full"], [], instance)
+#             SESSION.add_all([c])
+#             SESSION.commit()
+#             ac = c.createAccessToken(SESSION)
+#         ac = AccessToken.findFirst(c.client_key, None, SESSION)
+#         SESSION.add_all([ac])
+#         SESSION.commit()
+#         print ac
+#         print c.getClientCredentials()
         
 #     def testViewingInstances(self):
 #         auser = User.findUser("Jane", SESSION)

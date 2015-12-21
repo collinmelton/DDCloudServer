@@ -23,7 +23,7 @@ TODO:
 
 BASE_DIR = os.getcwd().split("/DDCloudServer/")[0]+"/DDCloudServer/"
  
-DB_NAME = 'laptop.db'
+DB_NAME = 'laptop_2.db'
 DB_DIR = os.path.join(BASE_DIR,'Data')
 DB_TYPE = 'sqlite'
 

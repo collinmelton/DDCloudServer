@@ -26,27 +26,25 @@ class Disk(orm.Base):
     created = Column(Boolean)
     destroyed = Column(Boolean)
     mode = Column(String)
-    instanceNames = Column(PickleType)
     formatted = Column(Boolean)
     disk_type = Column(String)
     init_source = Column(String)
     shutdown_dest = Column(String)
+    image_id = Column(Integer, ForeignKey("image.id"))
+    image = relationship("Image", backref = "disks")
     # don't save myDriver, disk, log
 
-    def __init__(self, name, size, location, snapshot, myDriver, image, instanceNames, log, 
-                 disk_type = 'pd-standard', init_source="", shutdown_dest=""):
+    def __init__(self, name, size, location, snapshot=None, image=None, disk_type = 'pd-standard', 
+                 init_source="", shutdown_dest=""):
         self.name=name
         self.size=size
         self.location=location
         self.snapshot=snapshot
         self.image=image
-        self.myDriver=myDriver
         self.created=False
         self.destroyed=False
         self.disk=None
         self.mode="READ_WRITE"
-        self.instanceNames=instanceNames
-        self.log=log
         self.printToLog("initialized disk class")
         self.formatted=False
         self.disk_type=disk_type
@@ -114,33 +112,22 @@ class Disk(orm.Base):
                 self.created=True
                 self.formatted=True
     
-    # summary of disk properties for tsv format
-    def tabDelimSummary(self):
-        return {"header":"\t".join(["name", "size", "location", "snapshot", "image", 
-                                    "myDriver", "created", "destroyed", "disk", "instanceNames", "log"]), 
-                "values":"\t".join(map(lambda x: str(x), [self.name, self.size, self.location, self.snapshot, self.image, 
-                          self.myDriver, self.created, self.destroyed, self.disk, self.instanceNames, self.log]))}
-
     # print to log file
     def printToLog(self, text):
-        output=self.name+"\t"+text
-        self.log.write(output)
+        if "log" in self.__dict__ and self.log!=None:
+            output=self.name+"\t"+text
+            self.log.write(output)
 
     # some function to output class data in tsv form
     def toString(self):
         tabDelim=self.tabDelimSummary()
         return("\n".join([tabDelim["header"],tabDelim["values"]]))
 
-    # add instancename to list of instance names
-    def addInstance(self, instanceName):
-        if instanceName not in self.instanceNames:
-            self.instanceNames.append(instanceName)
-
     # method to create disk on GCE
     def create(self):
         self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created)+" None: "+str(self.disk==None))
         if self.destroyed or not self.created:
-            self.disk=self.trycommand(self.myDriver.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image, ex_disk_type=self.disk_type)
+            self.disk=self.trycommand(self.myDriver.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
             self.created=True
             self.destroyed=False
             self.printToLog("created disk on GCE")
@@ -201,4 +188,11 @@ class Disk(orm.Base):
                 tries +=1
                 time.sleep(10)
                 self.printToLog(str(func) + " Error: "+str(e)+ " try #"+str(tries)) 
-        return None        
+        return None
+    
+    @staticmethod
+    def findByName(session, name, user):
+        from DDServerApp.ORM.Mappers.Workflow import Workflow, DiskWorkflowLink
+        dids=session.query(Disk).join(DiskWorkflowLink).join(Workflow).filter(Disk.name==name).filter(Workflow.user_id==user.id).all()
+        if len(dids)==0: return None
+        else: return dids[0]  
