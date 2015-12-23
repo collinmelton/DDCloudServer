@@ -73,38 +73,6 @@ class Workflow(orm.Base):
     # replicates a dictionary
     def repDict(self, x):
         return copy.copy(x)
-#     
-#     # takes a dictionary and replaces a variable in the specified dictionary
-#     # entries with each replacement in a list of replacements
-#     def _expandVar(self, dict, variable, replacements, keys=[]):
-#         if keys==[]: keys = dict.keys()
-#         dicts = []
-#         for replacement in replacements:
-#             newD = self.repDict(dict)
-#             for key in keys:
-#                 if type(newD[key]) is list:
-#                     newD[key]=[x.replace(variable, replacement) for x in newD[key]]
-#                 else:
-#                     newD[key]=newD[key].replace(variable, replacement)
-#             dicts.append(newD)
-#         return dicts
-#     
-#     # takes a list of dictionaries and performs string replacement of variable
-#     # and each replacement in a list of replacements for the specified set of
-#     # keys
-#     def _expandVars(self, dicts, variable, replacements, keys=[]):
-#         result = []
-#         for dict in dicts:
-#             result+=self._expandVar(dict, variable, replacements, keys=keys)
-#         return result
-#     
-#     # takes a dictionary and replaces tuples of (variable, replacements)
-#     def _replaceVars(self, d, varsDict, keys=[]):
-#         replacementTuples = [(key, map(lambda x: x.strip(), value.split(","))) for key, value in varsDict.items()]
-#         dicts = [d]
-#         for variable, replacements in replacementTuples:
-#             dicts = self._expandVars(dicts, variable, replacements, keys=keys)
-#         return dicts
     
     def _mergeDicts(self, dict1, dict2):
         result = self.repDict(dict1)
@@ -114,46 +82,23 @@ class Workflow(orm.Base):
     # initialize disks and instances
     def initDisksAndInstances(self):
         # get disks
-        self.disks = self.createDisksInNamedDict()
+        disks = self.createDisksInNamedDict()
+        self.disks = disks.values()
         # get instances
-        self.instances = self.createInstancesInNamedDict(self.disks)
+        instances = self.createInstancesInNamedDict(disks)
+        self.instances = instances.values()
         # init instances with dependencies
         for instance in self.instances:
-            instance.setDependencies(self.instances)
-        
-#     # creates disks
-#     def createDisksInNamedDict(self):
-#         diskTemplates = self.workflowtemplate.disktemplates
-#         workflowVars = self.workflowtemplate.workflow_vars
-#         diskParamDicts = []
-#         for dt in diskTemplates:
-#             diskVars = dt.disk_vars
-#             diskParamDict = {"name": dt.name,
-#                              "size": dt.disk_size,
-#                              "location": dt.location,
-#                              "image": dt.image.name,
-#                              "disk_type": dt.disk_type} 
-#             varsDict = self._mergeDicts(diskVars, workflowVars)
-#             diskParamDicts+=self._replaceVars(diskParamDict, varsDict, keys=["name"])       
-#         # make disk instances
-#         result={}
-#         for diskParamDict in diskParamDicts:
-#             result[diskParamDict['name']] = Disk(diskParamDict["name"], diskParamDict["size"], 
-#                                                diskParamDict["location"], snapshot=None, 
-#                                                image=diskParamDict["image"], instanceNames=[], 
-#                                                disk_type = diskParamDict["disk_type"], 
-#                                                init_source="", shutdown_dest="", myDriver=None, log=None) 
-#         return result
+            instance.setDependencies(instances)
 
     # creates disks
     def createDisksInNamedDict(self):
         diskTemplates = self.workflowtemplate.disktemplates
-        print diskTemplates
         workflowVars = self.workflowtemplate.workflow_vars
         disks = {}
         for dt in diskTemplates:
-            varsDict = self._mergeDicts(dt.disk_vars, workflowVars)
-            newdisks = dt.generateDisks(varsDict)
+#             varsDict = self._mergeDicts(dt.disk_vars, workflowVars)
+            newdisks = dt.generateDisks(workflowVars)
             disks = self._mergeDicts(disks, newdisks)
         return disks
     
@@ -185,58 +130,6 @@ class Workflow(orm.Base):
             newinstances = it.generateInstances(varDict, disks)
             instances = self._mergeDicts(instances, newinstances)
         return instances
-    
-
-    
-#     # creates instance objects
-#     def createInstancesInNamedDict(self, disks):
-#         instanceTemplates = self.workflowtemplate.instancetemplates
-#         workflowVars = self.workflowtemplate.workflow_vars
-# 
-#         result = {}
-#         for it in instanceTemplates:
-#             instanceVars = it.variables
-#             variableDicts = self._parseVariableDicts(self._mergeDicts(instanceVars, workflowVars)) 
-#             for variableDict in variableDicts:
-#                 instanceParamDict = it.getParamDict(variableDict)
-#                 commandDict = instanceParamDict["commands"]
-#                 # get standard node params
-#                 node_params={}
-#                 for param in ["size", "image", "location", "ex_network"]:
-#                     node_params[param]=instanceParamDict[param]
-#                 # parse ex_tags
-#                 node_params["ex_tags"]=instanceParamDict["ex_tags"].split("|")
-#                 # parse ex_metadata and add to node params
-#                 node_params["ex_metadata"]={'items': []}
-#                 for pair in instanceParamDict["ex_metadata"].split("|"):
-#                     if pair!="":
-#                         key, value= pair.split(":")
-#                         node_params["ex_metadata"]["items"].append({"key":key, "value":value})
-#                     
-#                 # get read disks and boot disk
-#                 read_disks=[]
-#                 for rd in instanceParamDict["read_disks"]:
-#                     if rd not in disks: raise Exception("read disk not found:"+rd) 
-#                     read_disks.append(disks[rd])
-#                     disks[rd].addInstance(instanceParamDict['name'])
-#                 read_write_disks=[]
-#                 for rd in instanceParamDict["read_write_disks"]:
-#                     if rd not in disks: raise Exception("read/write disk not found:"+rd) 
-#                     read_write_disks.append(disks[rd])
-#                     disks[rd].addInstance(instanceParamDict['name'])
-#                 if instanceParamDict["boot_disk"] not in disks: raise Exception("boot disk not found:"+instanceParamDict["boot_disk"])
-#                 boot_disk=disks[instanceParamDict["boot_disk"]]
-#                 boot_disk.addInstance(instanceParamDict['name'])
-#                 
-#                 # add new instance
-#                 result[instanceParamDict['name']]=Instance(instanceParamDict["name"], node_params, 
-#                                                            instanceParamDict["dependencies"], 
-#                                                            read_disks, read_write_disks, boot_disk,
-#                                                            commandDict, rootdir="/home/cmelton/", 
-#                                                            preemptible=instanceParamDict["preemptible"],  
-#                                                            numLocalSSD=instanceParamDict["numLocalSSD"], 
-#                                                            localSSDInitSources="", localSSDDests="")
-#         return result
     
     @staticmethod
     def findByName(session, name, user):

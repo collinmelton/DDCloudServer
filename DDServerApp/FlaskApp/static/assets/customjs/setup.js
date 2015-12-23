@@ -388,14 +388,14 @@ function getBaseUrl() {
 
 // a function to submit form data
 function submitForm(event, submitType, editType, reload, fileid) {
-    console.log($(event.target).parent()[0]);
+    // console.log($(event.target).parent()[0]);
     var formData = new FormData($(event.target).parent()[0]);
     // formData.append("test", "test value");
     // console.log(formData);
-
-    // if (typeof reload === "undefined") {
-        // reload = false;
-    // }
+	console.log(reload);
+    if (typeof reload === "undefined") {
+        reload = false;
+    }
     // if (typeof reload === "undefined") {
         // reload = "none";
     // }
@@ -425,6 +425,7 @@ function submitForm(event, submitType, editType, reload, fileid) {
 		success: function(data){
 			console.log(data["updates"]);
 	        if (reload) {
+	        	console.log("reloading!");
 	        	getUserData(updatePageElements);
 	        } else {
 	        	updateData(data["updates"]);

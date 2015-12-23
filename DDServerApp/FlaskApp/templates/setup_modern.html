@@ -63,7 +63,7 @@ $(document).ready(function(){
                             <input type="text" class="form-control" id="newWorkflowName"  name="newWorkflowName" placeholder="Name of New Workflow">
                         </div>
                         <button type="button" onclick="submitForm(event, 'workflow', 'new')" class="btn btn-primary">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'workflow', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'workflow', 'delete', 'setup', true)">Delete</button>
                     </form>
                     <br>
                     <form id="workflow_variable_form">
@@ -89,7 +89,7 @@ $(document).ready(function(){
                         </div>
 
                         
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'workflow', 'edit', 'setup')">Save</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'workflow', 'edit', 'setup', true)">Save</button>
                     </form>
                     <br>
                     <div id="workflow_editor"></div>
@@ -218,8 +218,8 @@ $(document).ready(function(){
                             </div>
                         </div>
                         <div></div>                         
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'edit', 'setup')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'instance', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'edit', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'instance', 'delete', 'setup', true)">Delete</button>
                     </form>      
                     
                     <form id="instance_variable_form">
@@ -250,7 +250,7 @@ $(document).ready(function(){
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addInstancesVar();">Specify Another Variable</button>
                         </div>  
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'variables', 'setup')">Save Variables</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'instance', 'variables', 'setup', true)">Save Variables</button>
                     </form>             
                 </div>
                 
@@ -308,8 +308,8 @@ $(document).ready(function(){
                         </div>
                         <!-- <h4>Select an Initialization Source</h4>
                         <h4>Select an Shutdown Destination</h4> -->
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'save', 'setup')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'disk', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'save', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'disk', 'delete', 'setup', true)">Delete</button>
                     </form>      
                     
                     <form id="disk_variable_form">
@@ -340,7 +340,7 @@ $(document).ready(function(){
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addDisksVar('','');">Specify Another Variable</button>
                         </div>  
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'variables', 'setup')">Save</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'disk', 'variables', 'setup', true)">Save</button>
                     </form>             
                 </div>
                 
@@ -388,8 +388,8 @@ $(document).ready(function(){
                             </p> 
                             <textarea class="form-control" id="Command" name="Command" placeholder="e.g. echo hello"></textarea>
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'command', 'save', 'setup')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'command', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'command', 'save', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'command', 'delete', 'setup', true)">Delete</button>
                     </form>
                 </div>
                 
@@ -411,10 +411,15 @@ $(document).ready(function(){
                             <input type="text" class="form-control" id="authAccount" name="authAccount" placeholder="probably some email address">
                             <p class="help-block">This optional argument is used to sign into the appropriate google account using 'gcloud config set account'. This is useful for specifying an account with appropriate permissions to use utilities like gsutil to transfer files to cloud storage. </p>
                         </div> 
+                        <div class="form-group">
+                            <label for="installDirectory">Installation Directory</label>
+                            <input type="text" class="form-control" id="installDirectory" name="installDirectory" placeholder="e.g. /home/cmelton/">
+                            <p class="help-block">Input the path to the DDServer software installation directory.</p>
+                        </div> 
                         <!-- <h4>Select an Initialization Source</h4>
                         <h4>Select an Shutdown Destination</h4> -->
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'image', 'save', 'setup')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'image', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'image', 'save', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'image', 'delete', 'setup', true)">Delete</button>
                     </form>
                 </div>
                 
@@ -434,8 +439,8 @@ $(document).ready(function(){
                             <label for="pemFileUpload">PEM File</label>
                             <input type="file" id="pemFileUpload" name="pemFileUpload">
                         </div>                   
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', 'setup')">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', 'setup')">Delete</button>
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', 'setup', true)">Delete</button>
                     </form>
                 </div>
             </div>

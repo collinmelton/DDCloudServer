@@ -65,9 +65,7 @@ class WorkflowTemplate(orm.Base):
                 self._addVars(key, vardict[key])
     
     def _addVars(self, key, value):
-        print key, value
         self.workflow_vars[key]=value
-#         print self.workflow_vars
     
     @staticmethod
     def findByID(session, wfid, user):
@@ -113,7 +111,8 @@ class Image(orm.Base):
     def dictForJSON(self):
         return {"id": str(self.id),
                 "name": self.name,
-                "authaccount": self.authAccount}
+                "authaccount": self.authAccount,
+                "installDirectory": self.rootdir}
 
     def updateValues(self, name, authAccount, rootdir, user):
         if self.user == user:
@@ -178,14 +177,12 @@ class DiskTemplate(orm.Base):
               "variables": self.disk_vars}
     
     def updateVarDict(self, vardict, user):
-        print vardict
         if self.workflow.user == user:
             self.disk_vars = {}
             for key in vardict:
                 self._addVars(key, vardict[key])
     
     def _addVars(self, key, value):
-        print key, value
         self.disk_vars[key]=value
     
     def updateValues(self, name, workflow, image, diskSize, diskType, location, user):
@@ -220,8 +217,13 @@ class DiskTemplate(orm.Base):
             result = newresult
         return result
 
+    def _mergeDicts(self, dict1, dict2):
+        result = copy.copy(dict1)
+        for key, val in dict2.items(): result[key]=val
+        return result
+
     def generateDisks(self, varDict):
-        variableDicts = self._parseVariableDicts(varDict)
+        variableDicts = self._parseVariableDicts(self._mergeDicts(varDict, self.disk_vars))
         result = {}
         from DDServerApp.ORM.Mappers import Disk
         for variableDict in variableDicts:
@@ -338,31 +340,6 @@ class InstanceTemplate(orm.Base):
             x = x.replace(var, rep)
         return x
 
-#     # this method returns all relevant instance and command data in a form that 
-#     # can easily be used to generate instances and commands
-#     def getParamDict(self, varDict):
-#         instanceParamDict = {"name": self.name,
-#                              "size": self.machine_type,
-#                              "location": self.location,
-#                              "image": self.boot_disk.image.name,
-#                              "ex_network": self.ex_network,
-#                              "ex_tags": self.ex_tags,
-#                              "ex_metadata": self.ex_metadata,
-#                              "read_disks": [d.name for d in self.read_disks],
-#                              "read_write_disks": [d.name for d in self.read_write_disks],
-#                              "boot_disk": self.boot_disk.name,
-#                              "dependencies": [d.name for d in self.dependencies],
-#                              "numLocalSSD": self.numLocalSSD,
-#                              "preemptible": self.preemptible,
-#                              "commands": {str(c.id): c.dictForJSON() for c in self.commandtemplates}}
-#         keys=["name", "read_disks", "boot_disk", "read_write_disks", "dependencies"]
-#         for key in keys:
-#             if key in instanceParamDict:
-#                 instanceParamDict[key]=self._replaceVars(instanceParamDict[key], varDict)   
-#         for command_id in instanceParamDict["commands"]:
-#             instanceParamDict["commands"][command_id]["command"]=self.replaceVars(instanceParamDict["commands"][command_id]["command"], varDict)
-#         return instanceParamDict
-
     def updateValues(self, name, machineType, location, bootDisk, read_disks, 
                      read_write_disks, dependencies, ex_tags, ex_metadata,
                      ex_network, numLocalSSD, preemptible):
@@ -380,14 +357,12 @@ class InstanceTemplate(orm.Base):
         self.preemptible = preemptible
 
     def updateVarDict(self, vardict, user):
-        print vardict
         if self.workflow.user == user:
             self.variables = {}
             for key in vardict:
                 self._addVars(key, vardict[key])
     
     def _addVars(self, key, value):
-        print key, value
         self.variables[key]=value
 
     def _substituteVariables(self, x, varDict):
@@ -413,8 +388,13 @@ class InstanceTemplate(orm.Base):
             result = newresult
         return result
 
+    def _mergeDicts(self, dict1, dict2):
+        result = copy.copy(dict1)
+        for key, val in dict2.items(): result[key]=val
+        return result
+
     def generateInstances(self, varDict, disks):
-        variableDicts = self._parseVariableDicts(varDict)
+        variableDicts = self._parseVariableDicts(self._mergeDicts(varDict, self.variables))
         result = {}
         from DDServerApp.ORM.Mappers import Instance
         for variableDict in variableDicts:

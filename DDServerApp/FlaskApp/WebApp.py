@@ -305,8 +305,9 @@ def saveImage(user, data, delete):
     imageID = getID(data["imageImagesSelect"])
     name = data["imageNameOnImageForm"]
     authAccount = data["authAccount"]
+    rootdir = data["installDirectory"]
     if imageID == None:
-        image = Image(name, authAccount, user)
+        image = Image(name, authAccount, rootdir, user)
         SESSION.add(image)
         SESSION.commit()
     elif delete:
@@ -315,7 +316,7 @@ def saveImage(user, data, delete):
     else:
         image = Image.findByID(SESSION, imageID, user)
         if image != None:
-            image.updateValues(name, authAccount, user)
+            image.updateValues(name, authAccount, rootdir, user)
             SESSION.add(image)
             SESSION.commit()
         else:
@@ -670,23 +671,6 @@ def login():
     '''
     This page allows user to login to see his/her patients or to upload new patient data.
     '''
-    if "WEBAUTH_USER" in request.environ:
-        username = request.environ["WEBAUTH_USER"]
-        print username
-        user = User.findUser(username, SESSION) 
-         
-        if user == None: 
-            user = User(username, "doctor", "password")
-            orm.Base.metadata.create_all()
-            SESSION.add_all([user])
-            SESSION.commit()
-        session['username'] = username
-        if "admin" in user.role: 
-            session["admin"]=True
-        else: 
-            session["admin"]=False
-        return redirect(url_for('index'))
-          
     if request.method == 'POST':
         username = request.form['login']
         password = request.form['password']
@@ -694,15 +678,16 @@ def login():
         error = None
         if isinstance(user, basestring):
             error = user
-            flash(error)
+            print error
         else:
             session['username'] = user.name
             if "admin" in user.role: 
                 session["admin"]=True
             else: 
                 session["admin"]=False
-            flash('You were successfully logged in')
+            print 'You were successfully logged in'
             return redirect(url_for('index'))
+        print session["username"]
         return render_template('login_modern.html', error=error)
     return render_template('login_modern.html')
 

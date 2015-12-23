@@ -395,15 +395,15 @@ function getBaseUrl() {
 
 
 // a function to submit form data
-function submitForm(event, submitType, editType, page) {
+function submitForm(event, submitType, editType, page, reload) {
     var formData = new FormData($(event.target).parent()[0]);
     var reload = true;
-    // if (typeof reload === "undefined") {
-        // reload = false;
-    // }
+    if (typeof reload === "undefined") {
+        reload = false;
+    }
 	formData.append("submitType", submitType);
 	formData.append("editType", editType);
-	console.log(formData);
+	// console.log(formData);
 	$.ajax({
 		url: getBaseUrl() + 'api/_workflows',
 		data: formData,
@@ -831,12 +831,14 @@ function updateImageOptionsOnImageForm() {
 	// reset form vars
 	$("#imageNameOnImageForm").val("");
     $("#authAccount").val("");
+    $("#installDirectory").val("");
     // set form vars
     if (image !="None") {
     	// get image data
 	    $("#imageNameOnImageForm").val(image["name"]);
 	    // set auth account
 	    $("#authAccount").val(image["authaccount"]);
+	    $("#installDirectory").val(image["installDirectory"]);
 	}
 }
 

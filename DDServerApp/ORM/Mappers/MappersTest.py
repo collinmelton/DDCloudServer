@@ -41,11 +41,12 @@ class Test(unittest.TestCase):
             user = User("Jane", "user", "password")
         return user
     
-    def getWorkflowTemplate(self):
+    def getWorkflowTemplate(self, vardict = {}):
         user = self.getUser()
         wft = WorkflowTemplate.findByName(SESSION, "test_workflow_template", user)
         if wft==None:
             wft = WorkflowTemplate("test_workflow_template", user, workflowVars={"$1":"collin"})
+        wft.updateVarDict(vardict, user)
         return wft
     
     def getImage(self):
@@ -63,16 +64,17 @@ class Test(unittest.TestCase):
         image = self.getImage()
         self.assertTrue(image != None, "error generating image")
         
-    def getBootDiskTemplate(self, workflow=None):
+    def getBootDiskTemplate(self, workflow=None, vardict = {}):
         if workflow==None: workflow = self.getWorkflowTemplate()
         image = self.getImage()
         user = self.getUser()
         disk = DiskTemplate.findByName(SESSION, "test_boot_disk_template", user)
         if disk == None:
             disk = DiskTemplate("test_boot_disk_template", workflow, image, 10, "pd-standard", "us-central1-a")
+        disk.updateVarDict(vardict, disk.workflow.user)
         return disk
     
-    def getReadDiskTemplates(self, workflow=None):
+    def getReadDiskTemplates(self, workflow=None, vardict = {}):
         if workflow==None:
             workflow = self.getWorkflowTemplate()
         image = self.getImage()
@@ -80,29 +82,35 @@ class Test(unittest.TestCase):
         disk = DiskTemplate.findByName(SESSION, "test_read_disk_template", user)
         if disk == None:
             disk = DiskTemplate("test_read_disk_template", workflow, image, 100, "pd-standard", "us-central1-a")
+        disk.updateVarDict(vardict, disk.workflow.user)
         return [disk]
     
-    def getReadWriteDiskTemplates(self, workflow=None):
+    def getReadWriteDiskTemplates(self, workflow=None, vardict = {}):
         if workflow==None: workflow = self.getWorkflowTemplate()
         image = self.getImage()
         user = self.getUser()
         disk = DiskTemplate.findByName(SESSION, "test_read_write_disk_template", user)
         if disk == None:
             disk = DiskTemplate("test_read_write_disk_template", workflow, image, 100, "pd-standard", "us-central1-a")
+        disk.updateVarDict(vardict, disk.workflow.user)
         return [disk]
     
     def testDiskTemplate(self):
         disk = self.getBootDiskTemplate()
         self.assertTrue(disk!=None, "error generating disk template")
         
-    def getInstanceTemplate(self, workflow=None):
-        if workflow==None: workflow = self.getWorkflowTemplate()
-        user = self.getUser()
+    def getInstanceTemplate(self, workflow=None, vardict = {}):
+        if workflow==None: 
+            workflow = self.getWorkflowTemplate()
+            user = workflow.user
+        else:
+            user = self.getUser()
         it = InstanceTemplate.findByName(SESSION, "test_instance_template", user)
         if it==None:
-            it = InstanceTemplate("test_instance_template", "f1-micro", "us-central1-a", self.getBootDiskTemplate(workflow=workflow),
-                                  self.getReadDiskTemplates(workflow=workflow), self.getReadWriteDiskTemplates(workflow=workflow), 
+            it = InstanceTemplate("test_instance_template", "f1-micro", "us-central1-a", self.getBootDiskTemplate(workflow=workflow, vardict=vardict),
+                                  self.getReadDiskTemplates(workflow=workflow, vardict=vardict), self.getReadWriteDiskTemplates(workflow=workflow, vardict=vardict), 
                                   [], workflow, "tag1|tag2", "key1:value1|key2:value2", "", 1, True)
+        it.updateVarDict(vardict, it.workflow.user)
         return it
     
     def testInstanceTemplate(self):
@@ -188,19 +196,47 @@ class Test(unittest.TestCase):
     def testWorkflowToDisksAndInstances(self):
         workflowtemplate = self.getWorkflowTemplate()
         instanceTemplate = self.getInstanceTemplate(workflow=workflowtemplate)
-        print workflowtemplate.instancetemplates
-        print workflowtemplate.disktemplates
         commandTemplate = self.getCommandTemplate("test command", [], instanceTemplate)
         workflow = self.getWorkflow(wft=workflowtemplate)
         disks = workflow.createDisksInNamedDict()
         self.assertTrue(type(disks.values()[0])==Disk, "error generating disks from workflow")
         instances = workflow.createInstancesInNamedDict(disks)
         self.assertTrue(type(instances.values()[0])==Instance, "error generating instances from workflow")
-        # workflow.initDisksAndInstances
+        self.assertTrue(type(instances.values()[0].commands[0])==InstanceCommand, "error generating commands from instance")
     
-    def testWorkflowToDisks(self):
-        pass 
+    def initWorkflow(self, workflowvardict={}, diskinstancevardict = {}):
+        workflowtemplate = self.getWorkflowTemplate(vardict = workflowvardict)
+        instanceTemplate = self.getInstanceTemplate(workflow=workflowtemplate, vardict = diskinstancevardict)
+        commandTemplate = self.getCommandTemplate("test command", [], instanceTemplate)
+        workflow = self.getWorkflow(wft=workflowtemplate)
+        workflow.initDisksAndInstances()
+        return workflow
     
+    def testWorkflowInit(self):
+        workflow = self.initWorkflow()
+        self.assertTrue(type(workflow.disks[0])==Disk, "error generating disks from workflow")
+        self.assertTrue(type(workflow.instances[0])==Instance, "error generating instances from workflow") 
+    
+    def testWorkflowVars(self):
+        workflow = self.initWorkflow(workflowvardict={"test":"test1,test2"}, diskinstancevardict = {"template":"template1,template2"})
+        # test workflow var replacement
+        diskNames = {"test1":[d.name.replace("test1", "test") for d in workflow.disks if "test1" in d.name], 
+                     "test2":[d.name.replace("test2", "test") for d in workflow.disks if "test2" in d.name]}
+        instanceNames = {"test1":[i.name.replace("test1", "test") for i in workflow.instances if "test1" in i.name], 
+                     "test2":[i.name.replace("test2", "test") for i in workflow.instances if "test2" in i.name]}
+        commands = {"test1":reduce(lambda x,y: x+y, [[d.command.replace("test1", "test") for d in i.commands] for i in workflow.instances if "test1" in i.name]), 
+                     "test2":reduce(lambda x,y: x+y, [[d.command.replace("test2", "test") for d in i.commands] for i in workflow.instances if "test2" in i.name])}
+        self.assertEquals(list(set(diskNames["test1"]) - set(diskNames["test2"])), [], "workflowvar replacement failed")
+        self.assertEquals(list(set(instanceNames["test1"]) - set(instanceNames["test2"])), [], "workflowvar replacement failed")
+        self.assertEquals(list(set(commands["test1"]) - set(commands["test2"])), [], "workflowvar replacement failed")
+        
+        # test disk and instance var replacement
+        diskNames = {"test1":[d.name.replace("template1", "template") for d in workflow.disks if "template1" in d.name], 
+                     "test2":[d.name.replace("template2", "template") for d in workflow.disks if "template2" in d.name]}
+        instanceNames = {"test1":[i.name.replace("template1", "template") for i in workflow.instances if "template1" in i.name], 
+                     "test2":[i.name.replace("template2", "template") for i in workflow.instances if "template2" in i.name]}
+        self.assertEquals(list(set(diskNames["test1"]) - set(diskNames["test2"])), [], "workflowvar replacement failed")
+        self.assertEquals(list(set(instanceNames["test1"]) - set(instanceNames["test2"])), [], "workflowvar replacement failed")
 
 #     def makeTestInstanceWithSimpleCommands(self):
 #         auser = self.getUser()

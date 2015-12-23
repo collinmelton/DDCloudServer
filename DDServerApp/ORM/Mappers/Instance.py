@@ -94,6 +94,94 @@ class Instance(orm.Base):
         self.tagString = tagString
         self.metadataString = metadataString
         self.node_params = self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
+        self._initCommands()
+        
+    def _initCommands(self):
+        allCommands = []
+        # parse startup commands
+        startup_commands = "\n".join([self._mountDisksScript(), self._setActiveGcloudAuthAccount(), 
+                                      self._initialize_disks()]).split("\n")
+        # add startup commands
+        startup_commands = self.addCommandSequence(startup_commands, "startup", [])
+        # parse and add commands
+        commands = self.parseCommandDict(startupCommands=startup_commands)
+        # parse commands 
+        shutdown_commands = (self._save_disk_content()+"\n"+self._unmountDisksScript()).split("\n")
+        # add commands
+        shutdown_commands = self.addCommandSequence(shutdown_commands, "shutdown", commands)
+        
+        return {"startup":startup_commands, 
+                "main":commands, 
+                "shutdown":shutdown_commands}
+    
+    # code to run (on actual instance after boot) to initialize read/write disks, will copy disks contents to disk from some source
+    def _initialize_disks(self):
+        result = "\n".join([d.initialization_script() for d in self.read_write_disks])
+        for i in range(min(self.numLocalSSD, len(self.localSSDInitSources))):
+            source = self.localSSDInitSources[i]
+            if source != "":
+                result += "\n"+"gsutil rsync -r "+source+" /mnt/lssd-"+str(i)
+        return result
+
+    # code to run (on actual instance after boot) to save disk content 
+    def _save_disk_content(self):
+        # save disk content
+        result="\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/writeDiskContentFile.py"), self.read_write_disks))
+        # save disk files to other location (e.g. cloud storage)
+        result += "\n".join([d.shutdown_save_script() for d in self.read_write_disks])
+        for i in range(min(self.numLocalSSD, len(self.localSSDDests))):
+            dest = self.localSSDDests[i]
+            if dest != "":
+                result += "\n"+"gsutil rsync -r /mnt/lssd-"+str(i)+ " "+dest
+        return result
+
+    # code to run (on actual instance after boot) to mount local ssd drives
+    def _mount_local_ssd(self):
+        return ["mkdir -p  /mnt/lssd-"+str(i)+ "\n /usr/share/google/safe_format_and_mount -m 'mkfs.ext4 -F' /dev/disk/by-id/scsi-"+str(i)+"Google_EphemeralDisk_local-ssd-"+str(i)+" /mnt/lssd-"+str(i) for i in range(self.numLocalSSD)]
+    
+    # code to run (on actual instance after boot) to mount disks
+    def _mountDisksScript(self):
+        read_only=map(lambda disk: disk.mount_script(False), self.read_disks)
+        read_write=map(lambda disk: disk.mount_script(True), self.read_write_disks)
+        local_ssd=self._mount_local_ssd()
+        read_write_disk_restore = map(lambda disk: disk.contentRestore("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/restoreDiskContent.py"), self.read_write_disks)
+        result= "\n".join(read_only+read_write+local_ssd+read_write_disk_restore)
+        return result
+    
+    # code to run (on actual instance after boot) to unmount disks
+    def _unmountDisksScript(self):
+        read_only=map(lambda disk: disk.unmount_script(), self.read_disks)
+        read_write=map(lambda disk: disk.unmount_script(), self.read_write_disks)
+        result= "\n".join(read_only+read_write)
+        return result
+    
+    # code to run (on actual instance after boot) to set the active gcloud account
+    def _setActiveGcloudAuthAccount(self):
+        return "gcloud config set account "+self.image.authAccount    
+    
+    def addCommandSequence(self, command_list, command_type, command_dependencies = [], session=None):
+        from InstanceCommand import InstanceCommand
+        new_commands = []
+        for command in command_list:
+            new_command = InstanceCommand(self, command, command_dependencies, command_type)
+            new_commands.append(new_command)
+            command_dependencies = [new_command]
+        if session != None:
+            session.add_all(new_commands)
+            session.commit()
+        return new_commands 
+
+    def parseCommandDict(self, startupCommands=[]):
+        from InstanceCommand import InstanceCommand
+        newCommands = {}
+        # make commands
+        for id in self.command_dict:
+            newCommands[id] = InstanceCommand(self, self.command_dict[id]["command"], [], "main")
+        # set dependencies
+        for id in newCommands:
+            newCommands[id].dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
+        return newCommands.values()
+
 
     def buildNodeParams(self, machine_type, image_name, location, network, tags, metadata):
         node_params={}
@@ -112,14 +200,6 @@ class Instance(orm.Base):
                   
 
     # generates a list of commands from the command dictionary input
-    def parseCommandDict(self, startupCommands=[]):
-        newCommands = {}
-        # make commands
-        for id in self.command_dict:
-            newCommands[id] = InstanceCommand(self, self.command_dict[id]["command"], [], "main")
-        # set dependencies
-        for id in newCommands:
-            newCommands[id].dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
 
     # given a dictionary of instances set dependencies using dependency_names
     def setDependencies(self, instanceDict):
@@ -226,87 +306,7 @@ class Instance(orm.Base):
                 self.status="started"
                 self.log.write(self.name+"is already created!!")
     
-    # code to run (on actual instance after boot) to initialize read/write disks, will copy disks contents to disk from some source
-    def _initialize_disks(self):
-        result = "\n".join([d.initialization_script() for d in self.read_write_disks])
-        for i in range(min(self.numLocalSSD, len(self.localSSDInitSources))):
-            source = self.localSSDInitSources[i]
-            if source != "":
-                result += "\n"+"gsutil rsync -r "+source+" /mnt/lssd-"+str(i)
-        return result
 
-    # code to run (on actual instance after boot) to save disk content 
-    def _save_disk_content(self):
-        # save disk content
-        result="\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/writeDiskContentFile.py"), self.read_write_disks))
-        # save disk files to other location (e.g. cloud storage)
-        result += "\n".join([d.shutdown_save_script() for d in self.read_write_disks])
-        for i in range(min(self.numLocalSSD, len(self.localSSDDests))):
-            dest = self.localSSDDests[i]
-            if dest != "":
-                result += "\n"+"gsutil rsync -r /mnt/lssd-"+str(i)+ " "+dest
-        return result
-
-    # code to run (on actual instance after boot) to mount local ssd drives
-    def _mount_local_ssd(self):
-        return ["mkdir -p  /mnt/lssd-"+str(i)+ "\n /usr/share/google/safe_format_and_mount -m 'mkfs.ext4 -F' /dev/disk/by-id/scsi-"+str(i)+"Google_EphemeralDisk_local-ssd-"+str(i)+" /mnt/lssd-"+str(i) for i in range(self.numLocalSSD)]
-    
-    # code to run (on actual instance after boot) to mount disks
-    def _mountDisksScript(self):
-        read_only=map(lambda disk: disk.mount_script(False), self.read_disks)
-        read_write=map(lambda disk: disk.mount_script(True), self.read_write_disks)
-        local_ssd=self._mount_local_ssd()
-        print self.rootdir
-        read_write_disk_restore = map(lambda disk: disk.contentRestore("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/restoreDiskContent.py"), self.read_write_disks)
-        result= "\n".join(read_only+read_write+local_ssd+read_write_disk_restore)
-        return result
-    
-    # code to run (on actual instance after boot) to unmount disks
-    def _unmountDisksScript(self):
-        read_only=map(lambda disk: disk.unmount_script(), self.read_disks)
-        read_write=map(lambda disk: disk.unmount_script(), self.read_write_disks)
-        result= "\n".join(read_only+read_write)
-        return result
-    
-    # code to run (on actual instance after boot) to set the active gcloud account
-    def _setActiveGcloudAuthAccount(self):
-        return "gcloud config set account "+self.myDriver.auth_account
-        
-    def addCommandSequence(self, command_list, command_type, command_dependencies = [], session=None):
-        from InstanceCommand import InstanceCommand
-        new_commands = []
-        for command in command_list:
-            new_command = InstanceCommand(self, command, command_dependencies, command_type)
-            new_commands.append(new_command)
-            command_dependencies = [new_command]
-        if session != None:
-            session.add_all(new_commands)
-            session.commit()
-        return new_commands
-
-    # parses the script and creates a list of commands
-    def parseScript(self, script, session=None):
-        allCommands = []
-        # parse startup commands
-        startup_commands = "\n".join([self._mountDisksScript(), self._setActiveGcloudAuthAccount(), 
-                                      self._initialize_disks()]).split("\n")
-        if self.activateStackdriver: startup_commands.append("sudo bash stack-install.sh --api-key="+self.StackdriverAPIKey)
-        # add startup commands
-        startup_commands = self.addCommandSequence(startup_commands, "startup", [], session)
-        
-        # parse commands
-        commands = script.split("\n")
-        # add commands
-        commands = self.addCommandSequence(commands, "main", startup_commands, session)
-        
-        # parse commands 
-        shutdown_commands = (self._save_disk_content()+"\n"+self._unmountDisksScript()).split("\n")
-        # add commands
-        shutdown_commands = self.addCommandSequence(shutdown_commands, "shutdown", commands, session)
-        
-        return {"startup":startup_commands, 
-                "main":commands, 
-                "shutdown":shutdown_commands}
     
     
 #     # package script in python script shell
