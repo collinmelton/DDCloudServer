@@ -7,8 +7,9 @@ Created on Nov 20, 2015
 # imports
 from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, Float,ForeignKey,backref,TextReader, joinedload_all
 from DDServerApp.ORM import BASE_DIR, Boolean
-import sys, time, copy
+import sys, time, copy, thread, datetime, inspect
 from DDServerApp.ORM.Mappers import User, WorkflowTemplate, Disk, Instance
+from DDServerApp.Utilities.GCEManager import GCEManager 
 
 
 class DiskWorkflowLink(orm.Base):
@@ -24,7 +25,123 @@ class InstanceWorkflowLink(orm.Base):
     '''
     workflow_id = Column(Integer, ForeignKey('workflow.id'), primary_key=True)
     instance_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
+
+class LogFile(orm.Base):
+    '''
+    This class logs data.
+    '''
+    id = Column(Integer,primary_key=True)
+    fileName = Column(String, index=True)
     
+    def __init__(self, fileName):
+        self.fileName=fileName
+        self.lock=thread.allocate_lock()
+        try:
+            f = open(self.fileName, 'w')
+            f.write("logfile start")
+            f.close()
+        except:
+            print "something is wrong with log file"
+
+    def _reallocateLockIfNeeded(self):
+        if "lock" not in self.__dict__: self.lock=thread.allocate_lock()
+    
+    def __str__(self):
+        return self.fileName
+
+    # write with new line and date-time
+    def write(self, textToWrite):
+        self._reallocateLockIfNeeded()
+        self.lock.acquire()
+        f = open(self.fileName, 'a')
+        # write time then add text to write
+        f.write("\n"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M")+"\t")
+        f.write(str(textToWrite))
+        print "log: ", textToWrite
+        if f: f.close()
+        self.lock.release()
+    
+    # write without date or newlines etc
+    def writeRaw(self, textToWrite):
+        self._reallocateLockIfNeeded()
+        self.lock.acquire()
+        try:
+            f = open(self.fileName, 'a')
+            # write time then add text to write
+            f.write(textToWrite)
+            print textToWrite
+            if f: f.close()
+        except:
+            print "something is wrong with raw log file writing"
+        self.lock.release()
+    
+class GCEManagerBinding(orm.Base):
+    '''
+    This class links an ORM version to the non ORM manager.
+    '''
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String)
+    key = Column(String)
+    auth_account = Column(String)
+    datacenter = Column(String)
+    project = Column(String),
+    auth_type = Column(String)
+    extraArgs = Column(PickleType)
+    
+    def __init__(self, user_id, key, auth_account=None, datacenter=None, project=None,
+                 auth_type=None, **kwargs):
+        self.user_id = user_id
+        self.auth_account = auth_account
+        self.key = key
+        self.datacenter = datacenter
+        self.project = project
+        self.auth_type = auth_type
+        self.extraArgs = kwargs
+        self.manager = self._ensureManagerExists()
+    
+    def _ensureManagerExists(self):
+        if "manager" not in self.__dict__ or self.manager==None: self.manager = GCEManager(self.user_id, self.key, datacenter=self.datacenter, 
+                                                                     project=self.project, auth_type=self.auth_type
+                                                                     )
+#         , **self.extraArgs)
+    
+    def runCommand(self, command, *args, **kwargs):
+        self._ensureManagerExists()
+        methods = [m for m in inspect.getmembers(self.manager) if m[0]==command]
+        if methods == []: 
+            print inspect.getmembers(self.manager)
+            print "error in running command in GCE Manager Binding!"
+        else: return methods[0][1](*args, **kwargs)
+    
+    def list_nodes(self, *args, **kwargs):
+        return self.runCommand("list_nodes", *args, **kwargs)
+        
+    def list_images(self, *args, **kwargs):
+        return self.runCommand("list_images", *args, **kwargs)
+        
+    def list_volumes(self, *args, **kwargs):
+        return self.runCommand("list_volumes", *args, **kwargs)
+    
+    def create_node(self, *args, **kwargs):
+        return self.runCommand("create_node", *args, **kwargs)
+        
+    def ex_get_node(self, *args, **kwargs):
+        return self.runCommand("ex_get_node", *args, **kwargs)
+        
+    def destroy_node(self, *args, **kwargs):
+        return self.runCommand("destroy_node", *args, **kwargs)
+        
+    def create_volume(self, *args, **kwargs):
+        return self.runCommand("create_volume", *args, **kwargs)
+        
+    def ex_get_volume(self, *args, **kwargs):
+        return self.runCommand("ex_get_volume", *args, **kwargs)
+        
+    def destroy_volume(self, *args, **kwargs):
+        return self.runCommand("destroy_volume", *args, **kwargs)
+        
+    def detach_volume(self, *args, **kwargs):
+        return self.runCommand("detach_volume", *args, **kwargs)
     
 class Workflow(orm.Base):
     '''
@@ -33,14 +150,18 @@ class Workflow(orm.Base):
     id = Column(Integer,primary_key=True)
     workflowname = Column(String, index=True)
     workflowtemplate_id = Column(Integer, ForeignKey("workflowtemplate.id"))
-    workflowtemplate = relationship(WorkflowTemplate, backref = "workflowtemplates")
+    workflowtemplate = relationship(WorkflowTemplate, backref = "workflows")
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship(User, backref = "workflows")
     active = Column(Boolean)
     instances = relationship(Instance, secondary='instanceworkflowlink')
     disks = relationship(Disk, secondary='diskworkflowlink')
+    logfile_id = Column(Integer, ForeignKey("logfile.id"))
+    logfile = relationship(LogFile, backref = "workflows")
+    gce_manager_id = Column(Integer, ForeignKey("gcemanagerbinding.id"))
+    gce_manager = relationship(GCEManagerBinding, backref = "workflows")
 
-    def __init__(self, name, workflowtemplate, user):
+    def __init__(self, name, workflowtemplate, user, logfilename, gceManagerExtraArgs = {}):
         '''
         Constructor
         '''
@@ -48,6 +169,15 @@ class Workflow(orm.Base):
         self.workflowtemplate = workflowtemplate
         self.user = user
         self.active = False
+        self.logfile = LogFile(logfilename)
+        self.gce_manager = GCEManagerBinding(self.workflowtemplate.credentials.serviceAccount, 
+                                             self.workflowtemplate.credentials.pemFileLocation, 
+                                             project = self.workflowtemplate.credentials.project,
+                                             auth_type=None, **gceManagerExtraArgs)
+    
+    def dictForJSON(self):
+        return {"id": str(self.id),
+                "name": self.name}
     
     # a unique name for GCE
     def name(self):
@@ -56,11 +186,23 @@ class Workflow(orm.Base):
     # starts the workflow
     def start(self):
         self.active = True
+        self.initDisksAndInstances()
+        for instance in self.instances:
+            instance.startIfReady()
+            
+    def stop(self):
+        self.active = False
+        for instance in self.instances: 
+            if instance.created and not instance.destroyed:
+                instance.destroy(destroydisks=False, force = False)
+                if not instance.destroyed: instance.destroy(destroydisks=False, force = True)
+        for disk in self.disks:
+            if disk.created and not disk.destroyed: disk.destroy()
     
-    # adds myDriver, instance, and log to instance
-    def reinit(self, myDriver, log):
-        self.myDriver = myDriver
-        self.log = log
+#     # adds myDriver, instance, and log to instance
+#     def reinit(self, myDriver, log):
+#         self.myDriver = myDriver
+#         self.log = log
 
     # string output
     def __str__(self):
@@ -98,7 +240,7 @@ class Workflow(orm.Base):
         disks = {}
         for dt in diskTemplates:
 #             varsDict = self._mergeDicts(dt.disk_vars, workflowVars)
-            newdisks = dt.generateDisks(workflowVars)
+            newdisks = dt.generateDisks(workflowVars, gce_manager=self.gce_manager, log = self.logfile)
             disks = self._mergeDicts(disks, newdisks)
         return disks
     
@@ -127,7 +269,7 @@ class Workflow(orm.Base):
         instances = {}
         for it in instanceTemplates:
             varDict = self._mergeDicts(it.variables, workflowVars)
-            newinstances = it.generateInstances(varDict, disks)
+            newinstances = it.generateInstances(varDict, disks, gce_manager=self.gce_manager, log = self.logfile)
             instances = self._mergeDicts(instances, newinstances)
         return instances
     

@@ -7,7 +7,7 @@ Created on Nov 20, 2015
 # imports
 from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, Float,ForeignKey,backref,TextReader, joinedload_all
 from DDServerApp.ORM import BASE_DIR, Boolean
-from DDServerApp.ORM.Mappers import InstanceCommand
+from DDServerApp.ORM.Mappers import InstanceCommand#, GCEManagerBinding, LogFile
 import sys, time
 from Disk import Disk
 
@@ -60,11 +60,15 @@ class Instance(orm.Base):
     metadataString = Column(String)
     image_id = Column(Integer, ForeignKey("image.id"))
     image = relationship("Image", backref = "instances")
+    gce_manager_id = Column(Integer, ForeignKey("gcemanagerbinding.id"))
+    gce_manager = relationship("GCEManagerBinding", backref = "instances")
+    log_id = Column(Integer, ForeignKey("logfile.id"))
+    log = relationship("LogFile", backref = "instances")
 
     def __init__(self, name, machine_type, image, location, network, tagString,
                  metadataString, dependency_names, read_disks, read_write_disks, 
                  boot_disk, command_dict, rootdir="/home/cmelton/", preemptible=True, numLocalSSD=0, 
-                 localSSDInitSources="", localSSDDests=""):
+                 localSSDInitSources="", localSSDDests="", gce_manager=None, log = None):
         '''
         Constructor
         '''
@@ -94,6 +98,8 @@ class Instance(orm.Base):
         self.tagString = tagString
         self.metadataString = metadataString
         self.node_params = self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
+        self.gce_manager = gce_manager
+        self.log = log
         self._initCommands()
         
     def _initCommands(self):
@@ -211,8 +217,8 @@ class Instance(orm.Base):
 
     # adds myDriver, instance, and log to instance
     def reinit(self, myDriver, log):
-        self.myDriver = myDriver
-        self.log = log
+#         self.gce_manager = myDriver
+#         self.log = log
         # if already created and not destroyed update the instance to see if it is still present on gce
         if self.created and not self.destroyed: self.updateNode()
 
@@ -245,7 +251,7 @@ class Instance(orm.Base):
     def manual_restart(self):
         self.printToLog("performing manual restart")
         self.destroy(instances=None, destroydisks=False, force = False)
-        for node in self.myDriver.list_nodes():
+        for node in self.gce_manager.list_nodes():
             self.printToLog(str(node.__dict__)) 
         self.create(restart=True)
     
@@ -256,7 +262,7 @@ class Instance(orm.Base):
         result = None
 #         reboot doesn't seem to work so commenting out
 #         if self.node != None:
-#             result = self.trycommand(self.myDriver.reboot_node, self.node)
+#             result = self.trycommand(self.gce_manager.reboot_node, self.node)
         if result == None:
             self.manual_restart()
         self.printToLog("created instance on GCE")
@@ -279,6 +285,7 @@ class Instance(orm.Base):
 
     # check if instance is ready and if yes start job
     def startIfReady(self):
+        self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
         if self.status=="complete": return False
         # if dependencies not ready do nothing
@@ -364,12 +371,12 @@ class Instance(orm.Base):
             while self.node==None:
                 i+=1
                 self.boot_disk.updateDisk()
-                self.node=self.trycommand(self.myDriver.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
+                self.node=self.trycommand(self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
                                       ex_boot_disk=self.boot_disk.disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
                 if self.node==None:
-                    self.node=self.trycommand(self.myDriver.ex_get_node, self.name)
+                    self.node=self.trycommand(self.gce_manager.ex_get_node, self.name)
                 if i==2:
                     self.printToLog("failed to create instance on GCE")
                     break
@@ -382,7 +389,7 @@ class Instance(orm.Base):
     
     # update node by checking if it exists on GCE
     def updateNode(self):
-        self.node=self.trycommand(self.myDriver.ex_get_node, self.name)
+        self.node=self.trycommand(self.gce_manager.ex_get_node, self.name)
         if self.node == None: self.destroyed=True
     
     # destroy node on GCE
@@ -399,7 +406,7 @@ class Instance(orm.Base):
                 disk.destroyifnotneeded(instances)
         # destroy node
         if self.node!=None and not self.destroyed:
-            self.trycommand(self.myDriver.destroy_node, self.node)
+            self.trycommand(self.gce_manager.destroy_node, self.node)
             self.node=None
             self.printToLog("destroyed instance on GCE")
             # self.boot_disk.destroy() # boot disk seems to destroy itself so commenting this out

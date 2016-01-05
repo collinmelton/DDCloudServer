@@ -48,7 +48,7 @@ $(document).ready(function(){
                             <select class="form-control", id="launcherWorkflowSelect" name="launcherWorkflowSelect">
                             </select>
                         </div>
-                        <button type="button" onclick="submitForm(event, 'launchworkflow', 'launch')" class="btn btn-primary">Launch</button>
+                        <button type="button" onclick="submitForm(event, 'launchworkflow', 'launch', 'launcher', true)" class="btn btn-primary">Launch</button>
                     </form>
                     <h3 class="page-header">Stop Workflow</h3>
                     <form id="active_workflows_form">
@@ -57,7 +57,7 @@ $(document).ready(function(){
                             <select class="form-control", id="activeWorkflowSelect" name="activeWorkflowSelect">
                             </select>
                         </div>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'launchworkflow', 'stop')">Stop</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'launchworkflow', 'stop', 'launcher', true)">Stop</button>
                     </form>
                     
                 </div>

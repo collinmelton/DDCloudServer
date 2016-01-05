@@ -4,7 +4,7 @@ Created on Nov 30, 2015
 @author: cmelton
 '''
 import unittest
-from DDServerApp.ORM.Mappers import orm, User, InstanceCommand, Client, Instance, AccessToken, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Workflow, Disk
+from DDServerApp.ORM.Mappers import orm, User, InstanceCommand, Client, Instance, AccessToken, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Workflow, Disk, Credentials
 from DDServerApp.Utilities.JobAndDiskFileReader import JobAndDiskFileReader
 from DDServerApp.Utilities.LogFile import LogFile
 from DDServerApp.Utilities.GCEManager import GCEManager
@@ -41,11 +41,18 @@ class Test(unittest.TestCase):
             user = User("Jane", "user", "password")
         return user
     
+    def getCredentials(self, user):
+        cred = Credentials.findByName(SESSION, "test_credentials", user)
+        if cred == None:
+            cred = Credentials("test_credentials", "875996339847-nv3l8p9pp4ervtpsg1gbpbabktd619db@developer.gserviceaccount.com", "/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/DDCloudServer/Data/TestFiles/GCP_SnyderProject.pem", "gbsc-gcp-lab-snyder", user)
+        return cred
+    
     def getWorkflowTemplate(self, vardict = {}):
         user = self.getUser()
+        cred = self.getCredentials(user)
         wft = WorkflowTemplate.findByName(SESSION, "test_workflow_template", user)
         if wft==None:
-            wft = WorkflowTemplate("test_workflow_template", user, workflowVars={"$1":"collin"})
+            wft = WorkflowTemplate("test_workflow_template", user, workflowVars={"$1":"collin"}, credentials = cred)
         wft.updateVarDict(vardict, user)
         return wft
     
@@ -133,12 +140,16 @@ class Test(unittest.TestCase):
         if wft==None: wft = self.getWorkflowTemplate()
         user = self.getUser()
         wf = Workflow.findByName(SESSION, "test_workflow", user)
+        logfilename = "./test_workflow.log.txt"
         if wf == None:
-            wf = Workflow("test_workflow", wft, user)
+            wf = Workflow("test_workflow", wft, user, logfilename)
         return wf
     
     def testWorkflow(self):
         wf = self.getWorkflow()
+#         print "volumes", wf.gce_manager.list_volumes(ex_zone="us-central1-a")
+#         print "nodes", wf.gce_manager.list_nodes(ex_zone="us-central1-a")
+#         print "images", wf.gce_manager.list_images()
         self.assertTrue(wf != None, "error generating workflow")
     
     def getDisk(self, disk_name):

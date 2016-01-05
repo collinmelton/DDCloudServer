@@ -12,6 +12,7 @@ import sys, time
 
 from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, Float,ForeignKey,backref,TextReader, joinedload_all
 from DDServerApp.ORM import BASE_DIR, Boolean
+#from DDServerApp.ORM.Mappers import GCEManagerBinding, LogFile
 
 class Disk(orm.Base):
     '''
@@ -32,10 +33,13 @@ class Disk(orm.Base):
     shutdown_dest = Column(String)
     image_id = Column(Integer, ForeignKey("image.id"))
     image = relationship("Image", backref = "disks")
-    # don't save myDriver, disk, log
+    gce_manager_id = Column(Integer, ForeignKey("gcemanagerbinding.id"))
+    gce_manager = relationship("GCEManagerBinding", backref = "disks")
+    log_id = Column(Integer, ForeignKey("logfile.id"))
+    log = relationship("LogFile", backref = "disks")
 
     def __init__(self, name, size, location, snapshot=None, image=None, disk_type = 'pd-standard', 
-                 init_source="", shutdown_dest=""):
+                 init_source="", shutdown_dest="", gce_manager=None, log = None):
         self.name=name
         self.size=size
         self.location=location
@@ -50,11 +54,13 @@ class Disk(orm.Base):
         self.disk_type=disk_type
         self.init_source = init_source
         self.shutdown_dest = shutdown_dest
+        self.gce_manager = gce_manager
+        self.log = log
 
     # adds myDriver, disk, and log to instance
     def reinit(self, myDriver, log):
-        self.myDriver = myDriver
-        self.log = log
+#         self.gce_manager = myDriver
+#         self.log = log
         # if already created and not destroyed update the disk to see if it is still present on gce
         if self.created and not self.destroyed: self.updateDisk()
 
@@ -127,7 +133,7 @@ class Disk(orm.Base):
     def create(self):
         self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created)+" None: "+str(self.disk==None))
         if self.destroyed or not self.created:
-            self.disk=self.trycommand(self.myDriver.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
+            self.disk=self.trycommand(self.gce_manager.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
             self.created=True
             self.destroyed=False
             self.printToLog("created disk on GCE")
@@ -137,14 +143,14 @@ class Disk(orm.Base):
     # method to update disk with current disk on GCE
     def updateDisk(self):
         self.printToLog("updating disk "+self.name)
-        self.disk=self.trycommand(self.myDriver.ex_get_volume, self.name)
+        self.disk=self.trycommand(self.gce_manager.ex_get_volume, self.name)
         if self.disk == None: self.destroyed=True
     
     # destroy disk on GCE
     def destroy(self):
         self.updateDisk()
         if self.created and not self.destroyed: 
-            self.trycommand(self.myDriver.destroy_volume,self.disk)
+            self.trycommand(self.gce_manager.destroy_volume,self.disk)
             self.printToLog("destroyed disk on GCE")
         self.destroyed=True
         self.disk = None
@@ -172,7 +178,7 @@ class Disk(orm.Base):
     def detach(self, inst):
         if self.created and not self.destroyed:
             self.printToLog("trying to detach disk on GCE from "+inst.name)
-            self.trycommand(self.myDriver.detach_volume, self.disk, inst.node)
+            self.trycommand(self.gce_manager.detach_volume, self.disk, inst.node)
             self.printToLog("detached disk on GCE from "+inst.name)
 
     # try command for certain number of tries, sometimes GCE API doesn't work the first time its called

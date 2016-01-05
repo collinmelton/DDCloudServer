@@ -10,7 +10,7 @@
 
 $(document).ready(function(){
     // this code sets the write view on startup
-    toggleView("workflows_section");
+    toggleView("credentials_section");
     $(".nav li").on("click", function() {
         $(".nav li").removeClass("active");
         $(this).addClass("active");
@@ -40,29 +40,65 @@ $(document).ready(function(){
         <div class="row">
             <div class="col-sm-3 col-md-2 sidebar">
                 <ul class="nav nav-sidebar">
-                    <li class="active"><a href="#" id="workflow_click" onclick="toggleView('workflows_section');">Workflows</a></li>
+                    <li class="active"><a id="instance_click" onclick="toggleView('credentials_section');">Credentials</a></li>
+                    <li><a href="#" id="workflow_click" onclick="toggleView('workflows_section');">Workflows</a></li>
                     <li><a href="#" id="instance_click" onclick="toggleView('instances_section');">Instances</a></li>
                     <li><a href="#" id="instance_click" onclick="toggleView('disks_section');">Disks</a></li>
                     <li><a href="#" id="instance_click" onclick="toggleView('commands_section');">Commands</a></li>
                     <li><a href="#" id="instance_click" onclick="toggleView('images_section');">Images</a></li>
-                    <li><a href="#" id="instance_click" onclick="toggleView('credentials_section');">Credentials</a></li>
+                    
                 </ul>
             </div>
             <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <div id="credentials_section">
+                    <h1 class="page-header">Credentials</h1>
+                    <h4>Edit Your Credentials</h4>
+                    <form id="credentialsform">
+                        <div class="form-group">
+                            <label for="credentialCredentialsSelect">Select a Set of Credentials</label>
+                            <select class="form-control", id="credentialCredentialsSelect" name="credentialCredentialsSelect" onchange="updateCredentialOptionsOnCredentialsForm()">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="credentialsName">Name of Credentials</label>
+                            <input type="text" class="form-control" id="credentialsName" name="credentialsName" placeholder="Name of Credentials">
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceAccountEmail">Service Account Email</label>
+                            <input type="text" class="form-control" id="serviceAccountEmail" name="serviceAccountEmail" placeholder="something@developer.gserviceaccount.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="project">GCE Project Name</label>
+                            <input type="text" class="form-control" id="project" name="project" placeholder="Project Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="pemFileUpload">PEM File</label>
+                            <input type="file" id="pemFileUpload" name="pemFileUpload">
+                        </div>                   
+                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', 'setup', true)">Save</button>
+                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', 'setup', true)">Delete</button>
+                    </form>
+                </div>
+                
                 <div id="workflows_section">
                     <h1 class="page-header">Workflows</h1>
                     <form id="workflows_form">
-                        <h3>Make a New Workflow</h3>
+                        <h3>Edit Workflow</h3>
                         <div class="form-group">
                             <label for="workflowWorkflowsSelect">Select a Workflow</label>
                             <select class="form-control", id="workflowWorkflowsSelect" name="workflowWorkflowsSelect" onchange="updateWorkflowVarsOnWorkflowsForm()">
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="workflowCredentialsSelect">Select a Set of Credentials</label>
+                            <select class="form-control", id="workflowCredentialsSelect" name="workflowCredentialsSelect">
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="newWorkflowName">Workflow Name</label>
                             <input type="text" class="form-control" id="newWorkflowName"  name="newWorkflowName" placeholder="Name of New Workflow">
                         </div>
-                        <button type="button" onclick="submitForm(event, 'workflow', 'new')" class="btn btn-primary">Save</button>
+                        <button type="button" onclick="submitForm(event, 'workflow', 'new', 'setup', true)" class="btn btn-primary">Save</button>
                         <button type="button" class="btn btn-danger" onclick="submitForm(event, 'workflow', 'delete', 'setup', true)">Delete</button>
                     </form>
                     <br>
@@ -423,26 +459,7 @@ $(document).ready(function(){
                     </form>
                 </div>
                 
-                <div id="credentials_section">
-                    <h1 class="page-header">Credentials</h1>
-                    <h4>Edit Your Credentials</h4>
-                    <form id="credentialsform">
-                        <div class="form-group">
-                            <label for="credentialsName">Name of Credentials</label>
-                            <input type="text" class="form-control" id="credentialsName" name="credentialsName" placeholder="Name of Credentials">
-                        </div>
-                        <div class="form-group">
-                            <label for="serviceAccountEmail">Service Account Email</label>
-                            <input type="text" class="form-control" id="serviceAccountEmail" name="serviceAccountEmail" placeholder="something@developer.gserviceaccount.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="pemFileUpload">PEM File</label>
-                            <input type="file" id="pemFileUpload" name="pemFileUpload">
-                        </div>                   
-                        <button type="button" class="btn btn-primary" onclick="submitForm(event, 'credentials', 'save', 'setup', true)">Save</button>
-                        <button type="button" class="btn btn-danger" onclick="submitForm(event, 'credentials', 'delete', 'setup', true)">Delete</button>
-                    </form>
-                </div>
+
             </div>
         </div>
     </div>

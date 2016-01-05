@@ -85,12 +85,16 @@ class User(orm.Base):
         workflowData = {wf.id: wf.dictForJSON() for wf in self.workflowtemplates}
         imageData = {im.id: im.dictForJSON() for im in self.images}
         if self.credentials != None:
-            credentialData = self.credentials.dictForJSON()
+            credentialData = {cred.id: cred.dictForJSON() for cred in self.credentials}
         else: 
             credentialData = {}
         return {"workflows": workflowData, 
                 "images": imageData,
-                "credentials": credentialData}
+                "credentials": credentialData,
+                "active_workflows":self.getActiveWorkflows()}
+        
+    def getActiveWorkflows(self):
+        return {wft.id: wft.dictForJSON() for wft in self.workflowtemplates if any([wf.active for wf in wft.workflows])}
         
     @staticmethod
     def newUser(username, role, password, session):

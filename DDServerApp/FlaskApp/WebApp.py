@@ -4,7 +4,7 @@ Created on Oct 20, 2014
 @author: cmelton
 '''
 
-import sys, os, json
+import sys, os, json, datetime, time
 
 path = os.getcwd().split("DDServerApp")[0]
 if not path in sys.path:
@@ -14,7 +14,7 @@ if not path in sys.path:
 from flask import Flask, url_for, render_template, session, request, redirect, flash, Markup, jsonify
 from DDServerApp.ORM.Mappers import orm, User, UserUtilities
 from DDServerApp.ORM import BASE_DIR
-from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Credentials
+from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce, Workflow, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Credentials
 
 
 # if '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/' in os.getcwd(): #=='/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring/FlaskApp':
@@ -56,6 +56,18 @@ orm.Base.metadata.create_all()
 app.config["JSON_SORT_KEY"] = False
 app.config["OAUTH1_PROVIDER_REALMS"]=[""]
 app.config["OAUTH1_PROVIDER_ENFORCE_SSL"] = False
+
+
+app.config["LOGFILEDIRECTORY"] = os.path.join(BASE_DIR, "LogFiles")
+
+def getTimeStampedFile(name):
+    return name+"_"+datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+
+def ensureDirectoryExists(mypath):
+    if not os.path.exists(mypath): os.makedirs(mypath)
+    return mypath
+
+
 # app.config["OAUTH1_PROVIDER_SIGNATURE_METHODS"] = ( SIGNATURE_HMAC)
 
 
@@ -95,9 +107,9 @@ def dashboard():
     if redirect!=None: return redirect
     return render_template('dashboard_modern.html')
 
-@app.route('/about', methods=['GET'])
-def about():
-    return render_template('about_modern.html')
+# @app.route('/about', methods=['GET'])
+# def about():
+#     return render_template('about_modern.html')
 
 @oauth.clientgetter
 def load_client(client_key):
@@ -268,16 +280,7 @@ def getID(name):
         return None
     return name.split(":")[0]
 
-def workflowLauncher(user, data, stop):
-    wfid = getID(request.form["launcherWorkflowSelect"])
-    wf = WorkflowTemplate.findByID(SESSION, wfid, user)
-    if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
-    if not stop:
-        wf.startWorkflow()
-    else:
-        wf.stopWorkflow()
-    return {"updates": {"active workflows": user.getActiveWorkflows()},  
-            "message": "started workflow"}
+
 
 def newWorkflow(user, data, new, delete):
     if delete:
@@ -285,7 +288,10 @@ def newWorkflow(user, data, new, delete):
         WorkflowTemplate.delete(SESSION, wfid, user)
         result = {"updates": {}, "message": "deleted workflow"}
     elif new:
-        nwf = WorkflowTemplate(data["newWorkflowName"], user)
+        credID = getID(data["workflowCredentialsSelect"])
+        if credID == None: credentials = None
+        else: credentials = Credentials.findByID(SESSION, credID, user)
+        nwf = WorkflowTemplate(data["newWorkflowName"], user, credentials=credentials)
         SESSION.add(nwf)
         SESSION.commit()
         result = {"updates":{"workflows":{str(nwf.id):nwf.dictForJSON()}},
@@ -370,29 +376,33 @@ def allowedFile(filename):
     return len(filename)>4 and filename[-4:]==".pem"
 
 def saveCredentials(user, data, files, delete):
-#     print "files", files
     name = data["credentialsName"]
     serviceAccount = data["serviceAccountEmail"]
+    project = data["project"]
     f = request.files['pemFileUpload']
-#     print f, f.__dict__.keys()
+    
+    credID = getID(data["credentialCredentialsSelect"])
+    # get credentials object
+    if credID == None:
+        cred = Credentials("", "", "", "",user)
+    else:
+        cred = Credentials.findByID(SESSION, credID, user)
+        if cred == None: return {"updates": {}, "message": "user permissions error on credentials"}
+    # process inputs
     if f and allowedFile(f.filename):
         filename = str(user.id)+".pem"
         f.save(os.path.join(app.config['PEMFILEFOLDER'], filename))
         pemFileLocation = os.path.join(app.config['PEMFILEFOLDER'], filename)
     else:
         pemFileLocation = ""
-#     print name, serviceAccount, pemFileLocation
-    if user.credentials == None:
-        creds = Credentials(name, serviceAccount, pemFileLocation, user)
-        SESSION.add(creds)
-        SESSION.commit()
+    # update values
+    if delete:
+        Credentials.delete(SESSION, cred.id, user)
     else:
-        creds = user.credentials
-        if delete:
-            creds.updateValues("", "", "")
-        else:
-            creds.updateValues(name, serviceAccount, pemFileLocation)
-    return {"updates": {"credentials": creds.dictForJSON()},
+        cred.updateValues(name, serviceAccount, pemFileLocation, project)
+        SESSION.add(cred)
+        SESSION.commit()
+    return {"updates": {"credentials": {c.id: c.dictForJSON() for c in user.credentials}},
             "message": "updated credentials"}
 
 def saveCommand(user, data, delete):
@@ -507,6 +517,39 @@ def getUserData():
     return jsonify({"data": user.getUserData(),
             "message": "updated data"})
 
+def workflowLauncher(user, data, stop):
+    if stop:
+        wfid = getID(request.form["activeWorkflowSelect"])
+    else:
+        wfid = getID(request.form["launcherWorkflowSelect"])
+    print "finding workflow"
+    wf = WorkflowTemplate.findByID(SESSION, wfid, user)
+    print "found workflow"
+    if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
+    if not stop:
+        logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
+        wf.startWorkflow(SESSION, logfilename)
+    else:
+        print "stopping workflow"
+        wf.stopWorkflow(SESSION)
+    return {"updates": {"active_workflows": user.getActiveWorkflows()},  
+            "message": "started workflow"}
+
+# def workflowLauncher(user, data, stop):
+#     wft = WorkflowTemplate.findByID(SESSION, getID(data["launcherWorkflowSelect"]), user)
+#     if wft == None: return {"updates": {}, "message": "user permissions error on workflow template"}
+#     if wft.workflows == []:
+#         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wft.name)) 
+#         wf = Workflow(wft.name, wft, user, logfilename)
+#     else:
+#         wf = wft.workflows[0]
+#     if wf.active: 
+#         return {"updates": {}, "message": "workflow is already active"}
+#     else: 
+#         wf.start()
+#         return {"updates": {}, "message": "workflow has been started!"}
+    
+    
 @app.route("/api/_workflows", methods=['POST'])
 def workflowEditor():
     print request.form

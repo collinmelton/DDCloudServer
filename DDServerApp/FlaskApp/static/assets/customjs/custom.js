@@ -211,8 +211,8 @@ function mergeDicts(oldDict, newDict, depth) {
 
 // this function updates the global workflow data
 function updateData(data, page) {
-	console.log("updating data!");
-	console.log(data);
+	// console.log("updating data!");
+	// console.log(data);
 	var updateKeys = Object.keys(data);
 	$.each(updateKeys, function(index, updateKey) {
 		if (!($.inArray(updateKey, Object.keys(WORKFLOWDATA))>-1)) {
@@ -225,7 +225,7 @@ function updateData(data, page) {
 			WORKFLOWDATA[updateKey] = mergeDicts(WORKFLOWDATA[updateKey], data[updateKey], 0);
 		}
 	});
-	console.log(WORKFLOWDATA);
+	// console.log(WORKFLOWDATA);
 	
 	updatePageElements(page);
 }
@@ -245,7 +245,9 @@ function splitNameIntoIDAndName(name) {
 // get a workflow
 function getWorkflow(workflowSelect) {
 	var workflows = getData(["workflows"]);
-    var currentWorkflowIDName = $("#"+workflowSelect+" :selected").html();
+	var currentWorkflowIDName = $("#"+workflowSelect+" :selected").html();
+	if (typeof(currentWorkflowIDName)==="undefined") {return("None");}
+	if (currentWorkflowIDName.indexOf(": ") < 0) {return("None");} 
     var currentWorkflowID = splitNameIntoIDAndName(currentWorkflowIDName)["id"];
     if (!($.inArray(currentWorkflowID, Object.keys(workflows))>-1)) {return("None");}
     var currentWorkflow = workflows[currentWorkflowID];
@@ -255,9 +257,12 @@ function getWorkflow(workflowSelect) {
 // get a variable in a workflow e.g. disk or instance
 function getWorkflowVar(workflowSelect, varSelect, vartype) {
 	var currentWorkflow = getWorkflow(workflowSelect);
+	if (currentWorkflow=="None") {return("None");}
 	if (typeof $("#"+varSelect+" :selected").html() === 'undefined') {return("None");}
 	var varIDName = $("#"+varSelect+" :selected").html();
     var varID = splitNameIntoIDAndName(varIDName)["id"];
+    // console.log(currentWorkflow);
+    // console.log(vartype);
     if (!($.inArray(varID, Object.keys(currentWorkflow[vartype]))>-1)) {return("None");}
     var currentVar = currentWorkflow[vartype][varID];
     return(currentVar);
@@ -284,6 +289,8 @@ function getImageByID(id) {
 	return(data[id]);
 }
 
+
+
 // get an image
 function getImage(imageSelect) {
 	var images = getData(["images"]);
@@ -296,6 +303,20 @@ function getImage(imageSelect) {
 	}
 	
 }
+
+// get a set of credentials
+function getCredential(credSelect) {
+	var credentials = getData(["credentials"]);
+	var varIDName = $("#"+credSelect+" :selected").html();
+	var varID = splitNameIntoIDAndName(varIDName)["id"];
+	if ($.inArray(varID, Object.keys(credentials))>-1) {
+		return(credentials[varID]);
+	} else {
+		return("None");
+	}
+	
+}
+
 
 // get a command
 function getCommand(workflowSelect, instanceSelect, commandSelect) {
@@ -533,19 +554,30 @@ function addDisksVar(key, value) {
 // updates the workflow variables form when a new workflow is selected
 function updateWorkflowVarForm() {
     var currentWorkflow = getWorkflow("workflowVarWorkflowsSelect");
-    // reset select
-    $("#workflowvars").html("");
-    // set variables of current workflow in form
-    var variables = Object.keys(currentWorkflow["variables"]);
-    for (var i=0; i<variables.length; i++) {
-        addWorkflowVar(variables[i], currentWorkflow["variables"][variables[i]])
-    }
+    console.log(currentWorkflow);
+    if (currentWorkflow!="None") {
+	    // reset select
+	    $("#workflowvars").html("");
+	    // set variables of current workflow in form
+	    var variables = Object.keys(currentWorkflow["variables"]);
+	    for (var i=0; i<variables.length; i++) {
+	        addWorkflowVar(variables[i], currentWorkflow["variables"][variables[i]])
+	    }
+	}
 }
 
 function updateWorkflowVarsOnWorkflowsForm() {
 	var currentWorkflow = getWorkflow("workflowWorkflowsSelect");
-    $("#newWorkflowName").val(currentWorkflow[""]);
+    $("#newWorkflowName").val("");
+    var credentials = getData(["credentials"]);
+    $("#workflowCredentialsSelect").html(getOptions(credentials));
+	console.log("about to set credentials");
     if (currentWorkflow!="None") {
+    	console.log("setting credentials");
+    	var cred = credentials[currentWorkflow["credentials"]];
+    	console.log(cred["id"]+": "+cred["name"]);
+    	setSelectorOption("workflowCredentialsSelect", cred["id"]+": "+cred["name"]);
+    	console.log("setting name");
     	$("#newWorkflowName").val(currentWorkflow["name"]);	
     }
     
@@ -849,13 +881,30 @@ function initImageForm() {
 	updateImageOptionsOnImageForm();
 }
 
+// update options on credentials form
+function updateCredentialOptionsOnCredentialsForm() {
+	// get current credential
+	var credential = getCredential("credentialCredentialsSelect");
+
+	// reset form vars
+	$("#credentialsName").val("");
+	$("#serviceAccountEmail").val("");
+	$("#project").val("");
+    
+    // set form vars
+    if (credential !="None") {
+    	$("#credentialsName").val(credential["name"]);
+		$("#serviceAccountEmail").val(credential["serviceaccount"]);
+		$("#project").val(credential["project"]);
+	}
+}
+
 // init credentials form
 function initCredentialsForm() {
 	var credentials = getData(["credentials"]);
-	// set name
-	$("#credentialsName").val(credentials["name"]);
-	// set account
-	$("#serviceAccountEmail").val(credentials["serviceaccount"]);
+	$("#credentialCredentialsSelect").html(getOptions(credentials, ["New Set of Credentials"]));
+	updateCredentialOptionsOnCredentialsForm();
+
 }
 
 
@@ -925,6 +974,8 @@ function initLauncherWorkflowForm() {
 	// console.log("initializing launcher form");
 	var workflows = getData(["workflows"]);
 	$("#launcherWorkflowSelect").html(getOptions(workflows));
+	var workflows = getData(["active_workflows"]);
+	$("#activeWorkflowSelect").html(getOptions(workflows));
 }
 
 //// CODE TO RUN ON PAGE LOADING
@@ -932,6 +983,7 @@ function initLauncherWorkflowForm() {
 function updatePageElements(page) {
     // console.log(page);
     if (page=="setup") {
+    	initCredentialsForm();
 	    initWorkflowForm();
 	    initWorkflowVarForm();
 	    initInstanceForm();
@@ -939,7 +991,6 @@ function updatePageElements(page) {
 	    initDiskVarForm();
 	    initDiskForm();
 	    initImageForm();
-	    initCredentialsForm();
 	    initCommandsForm();	
 	    toggleAdvancedOptions();
     } else if (page=="launcher") {

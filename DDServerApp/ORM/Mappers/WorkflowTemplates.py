@@ -9,6 +9,62 @@ from DDServerApp.ORM import BASE_DIR, Boolean
 from User import User
 import os, copy
 
+class Credentials(orm.Base):
+    '''
+    classdocs
+    '''
+    id = Column(Integer,primary_key=True)
+    name = Column(String)
+    serviceAccount = Column(String)
+    pemFileLocation = Column(String)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    user = relationship(User, backref=backref("credentials"))
+    project = Column(String)
+
+    def __init__(self, name, serviceAccount, pemFileLocation, project, user):
+        '''
+        Constructor
+        '''
+        self.name = name
+        self.user = user
+        self.serviceAccount = serviceAccount
+        self.pemFileLocation = pemFileLocation 
+        self.project = project
+        
+    def dictForJSON(self):
+        return {"id": str(self.id),
+                "name": self.name, 
+                "serviceaccount": self.serviceAccount,
+                "project": self.project
+                }
+
+    def updateValues(self, name, serviceAccount, pemFileLocation, project):
+        self.name = name
+        self.serviceAccount = serviceAccount
+        if os.path.exists(self.pemFileLocation):
+            os.remove(self.pemFileLocation)
+        self.pemFileLocation = pemFileLocation
+        self.project = project
+
+    @staticmethod
+    def findByID(session, cid, user):
+        cids=session.query(Credentials).join(User).filter(Credentials.id==int(cid)).filter(User.id==user.id).all()
+        if len(cids)==0: return None
+        else: return cids[0]
+
+    @staticmethod
+    def findByName(session, name, user):
+        creds=session.query(Credentials).filter(Credentials.name==name).filter(Credentials.user_id==user.id).all()
+        if len(creds)==0: return None
+        else: return creds[0]
+        
+    @staticmethod
+    def delete(session, cid, user):
+        cred = Credentials.findByID(session, cid, user)
+        if cred != None:
+            session.delete(cred)
+            session.commit()
+
 class WorkflowTemplate(orm.Base):
     '''
     Class to hold user defined workflow. Its a template because
@@ -19,30 +75,33 @@ class WorkflowTemplate(orm.Base):
     workflow_vars = Column(PickleType)
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship(User, backref = "workflowtemplates")
+    credentials_id = Column(Integer, ForeignKey("credentials.id"))
+    credentials = relationship(Credentials, backref = "workflowtemplates")
 
-    def __init__(self, name, user, workflowVars={}):
+    def __init__(self, name, user, workflowVars={}, credentials = None):
         '''
         Constructor
         '''
         self.name = name
         self.user = user
         self.workflow_vars = workflowVars
+        self.credentials = credentials 
     
     def isActive(self):
-        return any([wf.active() for wf in self.workflows])
+        return any([wf.active for wf in self.workflows])
     
-    def startWorkflow(self, session):
+    def startWorkflow(self, session, logfilename):
         from Workflow import Workflow
         if not self.isActive():
-            wf = Workflow(self.name, self, self.user)
-        wf.start()
-        session.add(wf)
-        session.commit()
+            wf = Workflow(self.name, self, self.user, logfilename)
+            wf.start()
+            session.add(wf)
+            session.commit()
     
     def stopWorkflow(self, session):
         for wf in self.workflows:
             wf.stop()
-        session.add(self.workflows)
+        session.add_all(self.workflows)
         session.commit()
     
     def _instancesToDictForJSON(self):
@@ -56,7 +115,8 @@ class WorkflowTemplate(orm.Base):
                 "name": self.name,
                 "variables": self.workflow_vars,
                 "instances": self._instancesToDictForJSON(),
-                "disks": self._disksToDictForJSON()}
+                "disks": self._disksToDictForJSON(),
+                "credentials": self.credentials_id}
     
     def updateVarDict(self, vardict, user):
         if self.user == user:
@@ -222,14 +282,15 @@ class DiskTemplate(orm.Base):
         for key, val in dict2.items(): result[key]=val
         return result
 
-    def generateDisks(self, varDict):
+    def generateDisks(self, varDict, gce_manager=None, log = None):
         variableDicts = self._parseVariableDicts(self._mergeDicts(varDict, self.disk_vars))
         result = {}
         from DDServerApp.ORM.Mappers import Disk
         for variableDict in variableDicts:
             name = self._substituteVariables(self.name, variableDict)
             result[name] = Disk(name, self.disk_size, self.location, snapshot=None, image=self.image, 
-                                disk_type = 'pd-standard', init_source="", shutdown_dest="")
+                                disk_type = 'pd-standard', init_source="", shutdown_dest="",
+                                gce_manager=gce_manager, log = log)
         return result  
         
     @staticmethod
@@ -393,7 +454,7 @@ class InstanceTemplate(orm.Base):
         for key, val in dict2.items(): result[key]=val
         return result
 
-    def generateInstances(self, varDict, disks):
+    def generateInstances(self, varDict, disks, gce_manager=None, log = None):
         variableDicts = self._parseVariableDicts(self._mergeDicts(varDict, self.variables))
         result = {}
         from DDServerApp.ORM.Mappers import Instance
@@ -409,7 +470,7 @@ class InstanceTemplate(orm.Base):
                      self.ex_network, self.ex_tags, self.ex_metadata, dependency_names, 
                      read_disks, read_write_disks, boot_disk, command_dict, 
                      rootdir=self.boot_disk.image.rootdir, preemptible=True, numLocalSSD=0, 
-                     localSSDInitSources="", localSSDDests="")
+                     localSSDInitSources="", localSSDDests="", gce_manager=gce_manager, log = log)
         return result            
         
     @staticmethod
@@ -493,41 +554,5 @@ class CommandTemplate(orm.Base):
         if len(cids)==0: return None
         else: return cids[0]
 
-class Credentials(orm.Base):
-    '''
-    classdocs
-    '''
-    id = Column(Integer,primary_key=True)
-    name = Column(String)
-    serviceAccount = Column(String)
-    pemFileLocation = Column(String)
-    user_id = Column(Integer, ForeignKey("user.id"))
-    user = relationship(User, backref=backref("credentials", uselist=False))
 
-    def __init__(self, name, serviceAccount, pemFileLocation, user):
-        '''
-        Constructor
-        '''
-        self.name = name
-        self.user = user
-        self.serviceAccount = serviceAccount
-        self.pemFileLocation = pemFileLocation 
-        
-    def dictForJSON(self):
-        return {"name": self.name, 
-                "serviceaccount": self.serviceAccount
-                }
-
-    def updateValues(self, name, serviceAccount, pemFileLocation):
-        self.name = name
-        self.serviceAccount = serviceAccount
-        if os.path.exists(self.pemFileLocation):
-            os.remove(self.pemFileLocation)
-        self.pemFileLocation = pemFileLocation
-
-    @staticmethod
-    def findByID(session, cid, user):
-        cids=session.query(Credentials).join(User).filter(Credentials.id==int(cid)).filter(User.id==user.id).all()
-        if len(cids)==0: return None
-        else: return cids[0]
 

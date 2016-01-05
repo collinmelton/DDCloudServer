@@ -12,5 +12,5 @@ from DDServerApp.ORM.Mappers.InstanceCommand import InstanceCommand, CommandPerf
 from DDServerApp.ORM.Mappers.User import User, UserUtilities
 from DDServerApp.ORM.Mappers.Oauth import Client, RequestToken, AccessToken, Nonce
 from DDServerApp.ORM.Mappers.WorkflowTemplates import WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Credentials
-from DDServerApp.ORM.Mappers.Workflow import Workflow
+from DDServerApp.ORM.Mappers.Workflow import Workflow, GCEManagerBinding, LogFile
 
