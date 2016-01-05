@@ -92,9 +92,12 @@ class WorkflowTemplate(orm.Base):
     
     def startWorkflow(self, session, logfilename, address):
         from Workflow import Workflow
+        print "imported"
         if not self.isActive():
             wf = Workflow(self.name, self, self.user, logfilename, address)
+            "print not active found workflow"
             wf.start(session)
+            print "starting workflow"
             session.add(wf)
             session.commit()
     

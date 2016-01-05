@@ -188,11 +188,14 @@ class Workflow(orm.Base):
     # starts the workflow
     def start(self, session):
         self.active = True
+        print "set to active"
 #         print "images", self.gce_manager.list_images()
 #         print self.gce_manager.create_volume(10, "test", location="us-central1-a", snapshot=None, image="cloudtest110915", ex_disk_type="pd-standard")
         
+        print "initializing disks and instances"
         self.initDisksAndInstances()
          
+        print "starting instances if ready"
         for instance in self.instances:
             instance.startIfReady(session)
             
