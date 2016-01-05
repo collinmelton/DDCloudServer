@@ -90,11 +90,11 @@ class WorkflowTemplate(orm.Base):
     def isActive(self):
         return any([wf.active for wf in self.workflows])
     
-    def startWorkflow(self, session, logfilename):
+    def startWorkflow(self, session, logfilename, address):
         from Workflow import Workflow
         if not self.isActive():
-            wf = Workflow(self.name, self, self.user, logfilename)
-            wf.start()
+            wf = Workflow(self.name, self, self.user, logfilename, address)
+            wf.start(session)
             session.add(wf)
             session.commit()
     

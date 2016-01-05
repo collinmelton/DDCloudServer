@@ -63,14 +63,14 @@ class Worker(object):
     This class's run method is invoked in the startup script on each worker instance. 
     '''
 
-    def __init__(self, token_key, token_secret, client_key, client_secret, instance_name):
+    def __init__(self, token_key, token_secret, client_key, client_secret, base_address):
         self.token_key = token_key
         self.token_secret = token_secret
         self.client_key = client_key
         self.client_secret = client_secret
-        self.instance_name = instance_name
         self.first_commands = []
         self.communicator = self._initCommunicator()
+        self.base_address = base_address
 #         self.getCommands()
     
     def _initCommunicator(self):
@@ -93,7 +93,7 @@ class Worker(object):
         pass
     
     def updateCommandData(self, data):
-        result = self.communicator.post("http://127.0.0.1:5000/api/commands", data)
+        result = self.communicator.post(self.base_address+"/api/commands", data)
         if VERBOSE: print result
         
     
@@ -101,7 +101,7 @@ class Worker(object):
         '''
         This method communicates with the master node and gets all commands to run.
         '''
-        commandString = self.communicator.get("http://127.0.0.1:5000/api/commands")._content
+        commandString = self.communicator.get(self.base_address+"/api/commands")._content
         self.commands = InstanceCommand.generateCommandsFromJSON(commandString)
         return self.commands 
     
@@ -124,27 +124,40 @@ class Worker(object):
         # what for threads to finish
         for thread in threads:
             thread.join()
+            
+    def finish(self):
+        self.communicator.get(self.base_address+"/api/finish")
         
-    
-    
-        
-    
+from optparse import OptionParser
 
+# this functions gets the command line options for running the program
+def getOptions():
+    parser = OptionParser()
+    parser.add_option("--TK", dest = "tokenKey", help = "", metavar = "STRING", type = "string")
+    parser.add_option("--TS", dest = "tokenSecret", help = "", metavar = "STRING", type = "string")
+    parser.add_option("--CK", dest = "clientKey", help = "", metavar = "STRING", type = "string")
+    parser.add_option("--CS", dest = "clientSecret", help = "", metavar = "STRING", type = "string")
+    parser.add_option("--AD", dest = "address", help = "", metavar = "STRING", type = "string")
+    (options, args) = parser.parse_args()
+    return options    
+    
 if __name__ == "__main__":
-    
-    token_key = 'TWuEjpsLpabBe6ImkdG37PbtX'
-    token_secret = '7GslLWSHTa0jblFCl9hk33oiJ'
-    client_props = {'client_secret': u's8rPirVz7uLF0vNmwHCKMCzxL', 'client_key': u'hdqLvlmpcWOsnHPQHGyRG9V5O'}
-    client_key = client_props['client_key']
-    client_secret = client_props['client_secret']
-
-    c = Communicator(client_key, client_secret, token_key, token_secret)
-#     if VERBOSE: print c.get("http://127.0.0.1:5000/api/me")
-    result = c.get("http://127.0.0.1:5000/api/me")
-    if VERBOSE: print result._content
-    if VERBOSE: print result.request.__dict__
-    body = {'title':'Test dataset', 'description':'Test description','defined_type':'dataset'}
-    headers = {'content-type':'application/json'}
+    options = getOptions()
+    w = Worker(options.tokenKey, options.tokenSecret, options.clientKey, options.clientSecret, options.address)
+    w.run()
+#     token_key = 'TWuEjpsLpabBe6ImkdG37PbtX'
+#     token_secret = '7GslLWSHTa0jblFCl9hk33oiJ'
+#     client_props = {'client_secret': u's8rPirVz7uLF0vNmwHCKMCzxL', 'client_key': u'hdqLvlmpcWOsnHPQHGyRG9V5O'}
+#     client_key = client_props['client_key']
+#     client_secret = client_props['client_secret']
+# 
+#     c = Communicator(client_key, client_secret, token_key, token_secret)
+# #     if VERBOSE: print c.get("http://127.0.0.1:5000/api/me")
+#     result = c.get("http://127.0.0.1:5000/api/me")
+#     if VERBOSE: print result._content
+#     if VERBOSE: print result.request.__dict__
+#     body = {'title':'Test dataset', 'description':'Test description','defined_type':'dataset'}
+#     headers = {'content-type':'application/json'}
         
         
         

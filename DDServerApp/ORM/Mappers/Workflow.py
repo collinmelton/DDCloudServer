@@ -154,14 +154,15 @@ class Workflow(orm.Base):
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship(User, backref = "workflows")
     active = Column(Boolean)
-    instances = relationship(Instance, secondary='instanceworkflowlink')
-    disks = relationship(Disk, secondary='diskworkflowlink')
+    instances = relationship(Instance, secondary='instanceworkflowlink', backref="workflows")
+    disks = relationship(Disk, secondary='diskworkflowlink', backref="workflows")
     logfile_id = Column(Integer, ForeignKey("logfile.id"))
     logfile = relationship(LogFile, backref = "workflows")
     gce_manager_id = Column(Integer, ForeignKey("gcemanagerbinding.id"))
     gce_manager = relationship(GCEManagerBinding, backref = "workflows")
+    address = Column(String)
 
-    def __init__(self, name, workflowtemplate, user, logfilename, gceManagerExtraArgs = {}):
+    def __init__(self, name, workflowtemplate, user, logfilename, address, gceManagerExtraArgs = {}):
         '''
         Constructor
         '''
@@ -174,6 +175,7 @@ class Workflow(orm.Base):
                                              self.workflowtemplate.credentials.pemFileLocation, 
                                              project = self.workflowtemplate.credentials.project,
                                              auth_type=None, **gceManagerExtraArgs)
+        self.address = address
     
     def dictForJSON(self):
         return {"id": str(self.id),
@@ -184,11 +186,15 @@ class Workflow(orm.Base):
         return "-".join(map(str, [self.workflowtemplate.id, self.id, self.workflowname]))
     
     # starts the workflow
-    def start(self):
+    def start(self, session):
         self.active = True
+#         print "images", self.gce_manager.list_images()
+#         print self.gce_manager.create_volume(10, "test", location="us-central1-a", snapshot=None, image="cloudtest110915", ex_disk_type="pd-standard")
+        
         self.initDisksAndInstances()
+         
         for instance in self.instances:
-            instance.startIfReady()
+            instance.startIfReady(session)
             
     def stop(self):
         self.active = False

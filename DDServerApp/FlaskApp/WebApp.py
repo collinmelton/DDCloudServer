@@ -358,11 +358,11 @@ def saveDisk(user, data, variables, delete):
         location = data["diskLocationSelector"]
         print "diskID", diskID
         if diskID == None:
-            disk = DiskTemplate(name, workflow, image, diskSize, diskType, location)
+            disk = DiskTemplate(name.lower(), workflow, image, diskSize, diskType, location)
         else:
             disk = DiskTemplate.findByID(SESSION, diskID, user)
             if disk != None:
-                disk.updateValues(name, workflow, image, diskSize, diskType, location, user)
+                disk.updateValues(name.lower(), workflow, image, diskSize, diskType, location, user)
             else:
                 return {"updates": {}, "message": "user permissions error on disk"}
 #                 disk = DiskTemplate(name, workflow, image, diskSize, diskType, location)
@@ -399,7 +399,7 @@ def saveCredentials(user, data, files, delete):
     if delete:
         Credentials.delete(SESSION, cred.id, user)
     else:
-        cred.updateValues(name, serviceAccount, pemFileLocation, project)
+        cred.updateValues(name.lower(), serviceAccount, pemFileLocation, project)
         SESSION.add(cred)
         SESSION.commit()
     return {"updates": {"credentials": {c.id: c.dictForJSON() for c in user.credentials}},
@@ -425,9 +425,9 @@ def saveCommand(user, data, delete):
             command = CommandTemplate.findByID(SESSION, commandID, user)
             if command == None: 
                 return {"updates": {}, "message": "user permissions error on command"}
-            command.updateValues(instance, name, commandText, dependencies)
+            command.updateValues(instance, name.lower(), commandText, dependencies)
         else:
-            command = CommandTemplate(instance, name, commandText, dependencies)
+            command = CommandTemplate(instance, name.lower(), commandText, dependencies)
             SESSION.add(command)
             SESSION.commit()
 
@@ -496,12 +496,12 @@ def saveInstance(user, data, variables, delete):
 #                 instance = InstanceTemplate(name, machineType, location, bootDisk, readDisks, 
 #                                         readWriteDisks, dependencies, workflow)
                 return {"updates": {}, "message": "user permissions error on instance"}
-            instance.updateValues(name, machineType, location, bootDisk, readDisks, 
+            instance.updateValues(name.lower(), machineType, location, bootDisk, readDisks, 
                                   readWriteDisks, dependencies, ex_tags, ex_metadata,
                                   ex_network, numLocalSSD, preemptible)
         else:
             print "adding instance"
-            instance = InstanceTemplate(name, machineType, location, bootDisk, readDisks, 
+            instance = InstanceTemplate(name.lower(), machineType, location, bootDisk, readDisks, 
                                         readWriteDisks, dependencies, workflow, ex_tags, 
                                         ex_metadata, ex_network, numLocalSSD, preemptible)
     SESSION.add(workflow)
@@ -528,7 +528,8 @@ def workflowLauncher(user, data, stop):
     if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
     if not stop:
         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
-        wf.startWorkflow(SESSION, logfilename)
+        address = request.url_root
+        wf.startWorkflow(SESSION, logfilename, address)
     else:
         print "stopping workflow"
         wf.stopWorkflow(SESSION)
@@ -613,6 +614,15 @@ def commands():
         print "back to app"
         return jsonify({"this":"worked!"})
 
+@app.route('/api/finish', methods=['GET'])
+@oauth.require_oauth('full')
+def finish():
+    '''
+    Returns command info in json form.
+    '''
+    if request.method == "GET":
+        client = request.oauth.client
+        return jsonify(client.instance.finish(SESSION))
 
 # @app.route('/trial/', methods=['GET','POST'])
 # def annotatenewtrial():

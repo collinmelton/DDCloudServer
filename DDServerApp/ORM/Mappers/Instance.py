@@ -101,7 +101,26 @@ class Instance(orm.Base):
         self.gce_manager = gce_manager
         self.log = log
         self._initCommands()
-        
+    
+    # client key and secret are unique to each instance, the access token and secret are unique
+    # for each client, these 4 values ensure that a particular instance is getting access to the 
+    # correct instance commands and sending back performance data associated with these commands 
+    def _getClientAndAccessTokens(self, session):
+        from Oauth import Client
+        if self.client == None:
+            client = Client(self.name, "instance client", self.workflows[0].user, ["full"], [], self)
+            session.add(client)
+            session.commit()
+        else: 
+            client = self.client
+        if client.accesstoken == None:
+            accesstoken = client.createAccessToken(session)
+            session.add(accesstoken)
+            session.commit()
+        else:
+            accesstoken = client.accesstoken
+        return client.client_key, client.client_secret, accesstoken.token, accesstoken.secret        
+    
     def _initCommands(self):
         allCommands = []
         # parse startup commands
@@ -284,7 +303,7 @@ class Instance(orm.Base):
         return True
 
     # check if instance is ready and if yes start job
-    def startIfReady(self):
+    def startIfReady(self, session):
         self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
         if self.status=="complete": return False
@@ -302,6 +321,13 @@ class Instance(orm.Base):
 #             self.create()
 #             return True
 
+    # finish and start new instances if ready
+    def finish(self, session):
+        self.failed = any([c.failed for c in self.commands])
+        self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)
+        for instance in self.dependencies:
+            instance.startIfReady(session)
+
     # given list of instances/nodes set node attribute if has the same name
     def setInstances(self, nodes):
         for node in nodes:
@@ -318,13 +344,11 @@ class Instance(orm.Base):
     
 #     # package script in python script shell
 #     # the StartupWrapper.py program executes the script, saves the output to google cloud storage and updates the project meta data on start and completion
-#     def packageScript(self):
-#         script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
-#         shutdownscript = self._unmountDisksScript()
-#         result = "\n#! /bin/bash"
-#         if self.activateStackdriver: result += "\nsudo bash stack-install.sh --api-key="+self.StackdriverAPIKey
-#         result += "\n/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/Startup.py --S \""+script.replace("\'", "'")+"\" --SD \""+shutdownscript.replace("\'", "'")+"\" --H "+self.rootdir+"StartupCommandHistoryv3.pickle --N "+self.name
-#         return(result)
+    def packageScript(self, session):          
+        clientKey, clientSecret, tokenKey, tokenSecret = self._getClientAndAccessTokens(session)
+        address = self.workflows[0].address
+        result = "\n/usr/local/bin/python2.7 "+self.rootdir+"DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address
+        return result
 # 
 #     def packageScriptNew(self):
 #         script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
@@ -337,7 +361,7 @@ class Instance(orm.Base):
 
     
     # create and run node on GCE
-    def create(self, restart = False):
+    def create(self, session, restart = False):
         if not self.created: 
             #raise Exception('Trying to create already created instance on '+self.name)
             # make sure all necessary disks are created
@@ -353,13 +377,9 @@ class Instance(orm.Base):
             self.boot_disk.formatted=True # make sure to indicate that it is formatted because a boot disk will be formatted on startup
                 
             # add startup script to metadata and make sure drive mounting is added to startup script
-#             print self.packageScript()
             if not restart:
-                if self.scriptAsParam:
-                    self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript()})
-                else:
-                    raise Exception("deploy with script from file or cloud storage not implemented yet")
-#             print self.node_params["ex_metadata"]
+                self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript(session)})
+
             # change mode of disks and prepare them in a list for node creation
             for disk in self.read_disks:
                 disk.mode="READ_ONLY"

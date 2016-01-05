@@ -44,7 +44,7 @@ class Client(orm.Base):
     user = relationship(User)
 
     instance_id = Column(Integer, ForeignKey('instance.id'))
-    instance = relationship(Instance, backref = "instances")
+    instance = relationship(Instance, backref = "client", uselist=False)
 
     client_key = Column(String, index=True)
     client_secret = Column(String, unique=True, index=True, nullable=False)
@@ -179,7 +179,7 @@ class Nonce(orm.Base):
 class AccessToken(orm.Base):
     '''
     An access token is the final token that could be use by the client. Client will send access token everytime when it need to access resource.
-    A access token requires at least these information:
+    An access token requires at least these information:
 
     client: Client associated with this token
     user: User associated with this token
@@ -189,7 +189,7 @@ class AccessToken(orm.Base):
     '''
     id = Column(Integer, primary_key=True)
     client_key = Column(String, ForeignKey('client.client_key'), nullable=False)
-    client = relationship('Client')
+    client = relationship('Client', backref = "accesstoken", uselist=False)
 
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship('User')
