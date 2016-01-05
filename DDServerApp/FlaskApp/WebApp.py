@@ -528,8 +528,12 @@ def workflowLauncher(user, data, stop):
     if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
     if not stop:
         print os.path.join(app.config["LOGFILEDIRECTORY"], user.name)
+        print getTimeStampedFile(wf.name)
+        print os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
+        print logfilename
         address = request.url_root
+        print address
         wf.startWorkflow(SESSION, logfilename, address)
     else:
         print "stopping workflow"
