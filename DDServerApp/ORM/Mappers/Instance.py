@@ -377,6 +377,8 @@ class Instance(orm.Base):
             self.boot_disk.formatted=True # make sure to indicate that it is formatted because a boot disk will be formatted on startup
                 
             # add startup script to metadata and make sure drive mounting is added to startup script
+            print self.packageScript(session)
+            return 
             if not restart:
                 self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript(session)})
 
