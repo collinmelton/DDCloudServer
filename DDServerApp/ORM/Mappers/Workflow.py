@@ -170,7 +170,9 @@ class Workflow(orm.Base):
         self.workflowtemplate = workflowtemplate
         self.user = user
         self.active = False
+        print "adding logfile"
         self.logfile = LogFile(logfilename)
+        print "adding manager"
         self.gce_manager = GCEManagerBinding(self.workflowtemplate.credentials.serviceAccount, 
                                              self.workflowtemplate.credentials.pemFileLocation, 
                                              project = self.workflowtemplate.credentials.project,
