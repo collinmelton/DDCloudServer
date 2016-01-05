@@ -527,6 +527,7 @@ def workflowLauncher(user, data, stop):
     print "found workflow"
     if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
     if not stop:
+        print os.path.join(app.config["LOGFILEDIRECTORY"], user.name)
         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
         address = request.url_root
         wf.startWorkflow(SESSION, logfilename, address)
@@ -622,6 +623,8 @@ def finish():
     '''
     if request.method == "GET":
         client = request.oauth.client
+        print "finishing"
+        return jsonify({})
         return jsonify(client.instance.finish(SESSION))
 
 # @app.route('/trial/', methods=['GET','POST'])
