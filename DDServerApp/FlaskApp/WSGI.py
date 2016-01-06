@@ -6,6 +6,7 @@ from WebApp import app
 #     app.run(debug=True)
     
 if __name__ == '__main__':
+    print "MAIN!!"
     import logging
     logging.basicConfig()
     app.run(debug=False) # debug must be off on production for security reasons
