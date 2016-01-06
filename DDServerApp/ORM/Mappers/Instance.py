@@ -107,6 +107,7 @@ class Instance(orm.Base):
     # correct instance commands and sending back performance data associated with these commands 
     def _getClientAndAccessTokens(self, session):
         from Oauth import Client
+        print self.client
         if self.client == []:
             client = Client(self.name, "instance client", self.workflows[0].user, ["full"], [], self)
             session.add(client)

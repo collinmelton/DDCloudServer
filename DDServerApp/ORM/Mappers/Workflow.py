@@ -177,6 +177,7 @@ class Workflow(orm.Base):
                                              self.workflowtemplate.credentials.pemFileLocation, 
                                              project = self.workflowtemplate.credentials.project,
                                              auth_type=None, **gceManagerExtraArgs)
+        print "added manager"
         self.address = address
     
     def dictForJSON(self):
