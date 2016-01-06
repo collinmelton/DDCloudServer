@@ -248,6 +248,8 @@ class InstanceCommand(orm.Base):
         result["finished"] = self.finished
         result["failed"] = self.failed
         result["result"] = self.result
+        result['start_time'] = self.start_time
+        result['end_time'] = self.end_time
         result["process_id"] = self.command_performance.process_id
         result["id"] = self.id
         return result
@@ -257,6 +259,15 @@ class InstanceCommand(orm.Base):
         '''
         Updates command status and adds performance data.
         '''
+        if VERBOSE: print "UPDATING COMMAND DATA!!!"
+        if VERBOSE: print data["start_time"]
+        if type(data["start_time"]) == float:
+            data["start_time"] = datetime.datetime.fromtimestamp(data["start_time"])
+        self.start_time = data["start_time"]
+        if VERBOSE: print data["end_time"]
+        if type(data["end_time"]) == float:
+            data["end_time"] = datetime.datetime.fromtimestamp(data["end_time"])
+        self.end_time = data["end_time"]
         if VERBOSE: print data["finished"]
         self.finished = data["finished"]
         if VERBOSE: print data["failed"]
@@ -349,7 +360,7 @@ class CommandPerformance(orm.Base):
         Adds time point data to command performance.
         '''
         for tp_data in data:
-            if VERBOSE: print tp_data
+            if VERBOSE: print "command performance, updating time point data", tp_data
             CommandPerformanceTimePoint.fromSummaryDict(tp_data, self)
     
     # returns serialized (string) version of performance data
@@ -384,28 +395,29 @@ class CommandPerformanceTimePoint(orm.Base):
         Constructor
         '''
         self.command_performance = command_performance
-        if VERBOSE: print cpu_percent
+#         if VERBOSE: print cpu_percent
         self.cpu_percent = float(cpu_percent)
-        if VERBOSE: print memory_percent
+#         if VERBOSE: print memory_percent
         self.memory_percent = float(memory_percent)
-        if VERBOSE: print rss
+#         if VERBOSE: print rss
         self.rss = float(rss)
-        if VERBOSE: print vms
+#         if VERBOSE: print vms
         self.vms = float(vms)
-        if VERBOSE: print read_bytes
+#         if VERBOSE: print read_bytes
         self.read_bytes = read_bytes
-        if VERBOSE: print write_bytes
+#         if VERBOSE: print write_bytes
         self.write_bytes = write_bytes
-        if VERBOSE: print time, type(time)
+        if VERBOSE: print "time", time, type(time)
         if type(time) == float:
             self.time = datetime.datetime.fromtimestamp(time)
+            if VERBOSE: print self.time
         else:
             self.time = time
         self.sentToServer = False
         
     def summaryDict(self):
         '''
-        Serializes important time point info using pickle.
+        Serializes important time point info.
         '''
         self.sentToServer = True
         return {"cpu_percent": self.cpu_percent,
