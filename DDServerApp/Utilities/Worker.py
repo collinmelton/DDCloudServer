@@ -4,6 +4,15 @@ Created on Dec 3, 2015
 @author: cmelton
 '''
 
+
+import sys, os, inspect
+
+path = inspect.getfile(inspect.currentframe()).split("DDServerApp")[0]
+print path
+if not path in sys.path:
+    print path
+    sys.path.insert(1, path)
+
 import requests
 from requests_oauthlib import OAuth1
 import json
@@ -88,12 +97,13 @@ class Worker(object):
     
     def _getData(self, data_type):
         '''
-        This method sends data to the master instance.
+        This method gets data from the master instance.
         '''
         pass
     
     def updateCommandData(self, data):
-        result = self.communicator.post(self.base_address+"/api/commands", data)
+        print "posting data"
+        result = self.communicator.post(self.base_address.strip("/")+"/api/commands", data)
         if VERBOSE: print result
         
     
@@ -101,7 +111,9 @@ class Worker(object):
         '''
         This method communicates with the master node and gets all commands to run.
         '''
-        commandString = self.communicator.get(self.base_address+"/api/commands")._content
+        print self.base_address+"/api/commands"
+        commandString = self.communicator.get(self.base_address.strip("/")+"/api/commands")._content
+        print "commands from server:", commandString
         self.commands = InstanceCommand.generateCommandsFromJSON(commandString)
         return self.commands 
     
@@ -142,6 +154,7 @@ def getOptions():
     return options    
     
 if __name__ == "__main__":
+
     options = getOptions()
     w = Worker(options.tokenKey, options.tokenSecret, options.clientKey, options.clientSecret, options.address)
     w.run()

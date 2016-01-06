@@ -18,7 +18,7 @@ from threading import Thread, Event
 NOT_ACTUALLY_FAILED_LIST=["org.broadinstitute.sting.gatk.CommandLineExecutable.generateGATKRunReport", "org.broadinstitute.gatk.engine.CommandLineExecutable.generateGATKRunReport"]
 PERFORMANCE_INTERVAL = 1 # gap between performance checks in secs
 UPDATE_SERVER_INTERVAL = int(math.floor(float(max([2, PERFORMANCE_INTERVAL]))/PERFORMANCE_INTERVAL)*PERFORMANCE_INTERVAL) # gap between updating server
-VERBOSE = False
+VERBOSE = True
 #### Some Helper Functions ####
 
 # get the current time
@@ -189,7 +189,7 @@ class InstanceCommand(orm.Base):
         return self.failed    
         
     def updatePerformance(self):
-        if VERBOSE: print "updating perfromance"
+        if VERBOSE: print "updating performance"
         self.addPerformanceTimePoint(self.process_id)
         
     # adds a performance time point
@@ -201,8 +201,10 @@ class InstanceCommand(orm.Base):
             # return false if it didn't work
             return False
         # get performance data
-        cpu_percent = process.cpu_percent(interval=0.1)
-        memory_percent = process.memory_percent()
+        try: cpu_percent = process.cpu_percent(interval=0.1)
+        except: cpu_percent = None
+        try: memory_percent = process.memory_percent()
+        except: memory_percent = None
         try: rss = process.memory_info().__dict__["rss"]
         except: rss = None
         try: vms = process.memory_info().__dict__["vms"]
@@ -215,7 +217,8 @@ class InstanceCommand(orm.Base):
         # add data
         if self.command_performance == None:
             self.command_performance = CommandPerformance(process_id)
-        self.command_performance.addTimePoint(cpu_percent, memory_percent, rss, vms, read_bytes, write_bytes, time)
+        if not any([x == None for x in [cpu_percent, memory_percent]]):
+            self.command_performance.addTimePoint(cpu_percent, memory_percent, rss, vms, read_bytes, write_bytes, time)
         # return True if it worked
         return True
     

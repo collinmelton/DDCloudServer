@@ -107,18 +107,19 @@ class Instance(orm.Base):
     # correct instance commands and sending back performance data associated with these commands 
     def _getClientAndAccessTokens(self, session):
         from Oauth import Client
-        if self.client == None:
+        if self.client == []:
             client = Client(self.name, "instance client", self.workflows[0].user, ["full"], [], self)
             session.add(client)
             session.commit()
         else: 
-            client = self.client
-        if client.accesstoken == None:
+            client = self.client[0]
+        print "client.accesstoken", client.accesstoken
+        if client.accesstoken == []:
             accesstoken = client.createAccessToken(session)
             session.add(accesstoken)
             session.commit()
         else:
-            accesstoken = client.accesstoken
+            accesstoken = client.accesstoken[0]
         return client.client_key, client.client_secret, accesstoken.token, accesstoken.secret        
     
     def _initCommands(self):
@@ -311,7 +312,7 @@ class Instance(orm.Base):
         if not self.__dependenciesReady(): return False
         # if not created create and not failed its ready so create
         if not self.created and not self.failed:
-            self.create()
+            self.create(session)
             return True
         # if failed or other do nothing
         return False
@@ -363,6 +364,8 @@ class Instance(orm.Base):
     # create and run node on GCE
     def create(self, session, restart = False):
         if not self.created: 
+            print self.packageScript(session)
+            return 
             #raise Exception('Trying to create already created instance on '+self.name)
             # make sure all necessary disks are created
             for disk in self.read_disks:
@@ -377,8 +380,6 @@ class Instance(orm.Base):
             self.boot_disk.formatted=True # make sure to indicate that it is formatted because a boot disk will be formatted on startup
                 
             # add startup script to metadata and make sure drive mounting is added to startup script
-            print self.packageScript(session)
-            return 
             if not restart:
                 self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript(session)})
 
