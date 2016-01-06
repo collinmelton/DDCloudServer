@@ -101,9 +101,11 @@ class GCEManagerBinding(orm.Base):
         self.manager = self._ensureManagerExists()
     
     def _ensureManagerExists(self):
-        if "manager" not in self.__dict__ or self.manager==None: self.manager = GCEManager(self.user_id, self.key, datacenter=self.datacenter, 
-                                                                     project=self.project, auth_type=self.auth_type
-                                                                     )
+        if "manager" not in self.__dict__ or self.manager==None: 
+            if VERBOSE: print "making manager"
+            self.manager = GCEManager(self.user_id, self.key, datacenter=self.datacenter, 
+                                      project=self.project, auth_type=self.auth_type)
+            if VERBOSE: print self.manager
 #         , **self.extraArgs)
     
     def runCommand(self, command, *args, **kwargs):
