@@ -14,4 +14,6 @@ if __name__ == '__main__':
     app.run(debug=False) # debug must be off on production for security reasons
     
 else: 
+    import logging
+    logging.basicConfig()
     print "NOT MAIN!!"
