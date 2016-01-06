@@ -11,6 +11,7 @@ import sys, time, copy, thread, datetime, inspect
 from DDServerApp.ORM.Mappers import User, WorkflowTemplate, Disk, Instance
 from DDServerApp.Utilities.GCEManager import GCEManager 
 
+VERBOSE = False
 
 class DiskWorkflowLink(orm.Base):
     '''
@@ -57,7 +58,7 @@ class LogFile(orm.Base):
         # write time then add text to write
         f.write("\n"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M")+"\t")
         f.write(str(textToWrite))
-        print "log: ", textToWrite
+        if VERBOSE: print "log: ", textToWrite
         if f: f.close()
         self.lock.release()
     
@@ -69,10 +70,10 @@ class LogFile(orm.Base):
             f = open(self.fileName, 'a')
             # write time then add text to write
             f.write(textToWrite)
-            print textToWrite
+            if VERBOSE: print textToWrite
             if f: f.close()
         except:
-            print "something is wrong with raw log file writing"
+            if VERBOSE: print "something is wrong with raw log file writing"
         self.lock.release()
     
 class GCEManagerBinding(orm.Base):
@@ -84,7 +85,7 @@ class GCEManagerBinding(orm.Base):
     key = Column(String)
     auth_account = Column(String)
     datacenter = Column(String)
-    project = Column(String),
+    project = Column(String)
     auth_type = Column(String)
     extraArgs = Column(PickleType)
     
@@ -109,8 +110,8 @@ class GCEManagerBinding(orm.Base):
         self._ensureManagerExists()
         methods = [m for m in inspect.getmembers(self.manager) if m[0]==command]
         if methods == []: 
-            print inspect.getmembers(self.manager)
-            print "error in running command in GCE Manager Binding!"
+            if VERBOSE: print inspect.getmembers(self.manager)
+            if VERBOSE: print "error in running command in GCE Manager Binding!"
         else: return methods[0][1](*args, **kwargs)
     
     def list_nodes(self, *args, **kwargs):
@@ -123,6 +124,7 @@ class GCEManagerBinding(orm.Base):
         return self.runCommand("list_volumes", *args, **kwargs)
     
     def create_node(self, *args, **kwargs):
+        if VERBOSE: print "creating node, project:", self.project
         return self.runCommand("create_node", *args, **kwargs)
         
     def ex_get_node(self, *args, **kwargs):
@@ -170,14 +172,14 @@ class Workflow(orm.Base):
         self.workflowtemplate = workflowtemplate
         self.user = user
         self.active = False
-        print "adding logfile"
+        if VERBOSE: print "adding logfile"
         self.logfile = LogFile(logfilename)
-        print "adding manager"
+        if VERBOSE: print "adding manager"
         self.gce_manager = GCEManagerBinding(self.workflowtemplate.credentials.serviceAccount, 
                                              self.workflowtemplate.credentials.pemFileLocation, 
                                              project = self.workflowtemplate.credentials.project,
                                              auth_type=None, **gceManagerExtraArgs)
-        print "added manager"
+        if VERBOSE: print "added manager"
         self.address = address
     
     def dictForJSON(self):
@@ -191,19 +193,20 @@ class Workflow(orm.Base):
     # starts the workflow
     def start(self, session):
         self.active = True
-        print "set to active"
+        if VERBOSE: print "set to active"
 #         print "images", self.gce_manager.list_images()
 #         print self.gce_manager.create_volume(10, "test", location="us-central1-a", snapshot=None, image="cloudtest110915", ex_disk_type="pd-standard")
         
-        print "initializing disks and instances"
+        if VERBOSE: print "initializing disks and instances"
         self.initDisksAndInstances()
          
-        print "starting instances if ready"
+        if VERBOSE: print "starting instances if ready"
         for instance in self.instances:
             instance.startIfReady(session)
             
     def stop(self):
         self.active = False
+        return
         for instance in self.instances: 
             if instance.created and not instance.destroyed:
                 instance.destroy(destroydisks=False, force = False)

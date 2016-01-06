@@ -5,10 +5,11 @@ Created on Oct 20, 2014
 '''
 
 import sys, os, json, datetime, time
+VERBOSE = False
 
 path = os.getcwd().split("DDServerApp")[0]
 if not path in sys.path:
-    print path
+    if VERBOSE: print path
     sys.path.insert(1, path)
 
 from flask import Flask, url_for, render_template, session, request, redirect, flash, Markup, jsonify
@@ -25,7 +26,7 @@ from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce, Wo
   
 path = os.path.join(os.getcwd().split("DDServerApp")[0], "DDServerApp")
 if not path in sys.path:
-    print path
+    if VERBOSE: print path
     sys.path.insert(1, path)
 # del path
 
@@ -299,7 +300,7 @@ def newWorkflow(user, data, new, delete):
     else:
         wfid = getID(request.form["workflowVarWorkflowsSelect"])
         wf = WorkflowTemplate.findByID(SESSION, wfid, user)
-        print user.name, user.id
+        if VERBOSE: print user.name, user.id
         if wf == None: return {"updates": {}, "message": "user permissions error"}        
         newvars = parseVariables(request.form)
         wf.updateVarDict(newvars, user)
@@ -356,7 +357,7 @@ def saveDisk(user, data, variables, delete):
         diskSize = data["diskSize"]
         diskType = data["diskTypeSelector"]
         location = data["diskLocationSelector"]
-        print "diskID", diskID
+        if VERBOSE: print "diskID", diskID
         if diskID == None:
             disk = DiskTemplate(name.lower(), workflow, image, diskSize, diskType, location)
         else:
@@ -440,25 +441,25 @@ def saveCommand(user, data, delete):
 
 def saveInstance(user, data, variables, delete):
     if delete:
-        print "deleting"
+        if VERBOSE: print "deleting"
         workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
         if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
         iid = getID(data["instanceInstancesSelect"])
         if iid!=None:
-            print iid
+            if VERBOSE: print iid
             InstanceTemplate.delete(SESSION, iid, user)
         workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
     elif variables:
         workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceVarWorkflowsSelect"]), user)
         if workflow == None: return {"updates": {}, "message": "user permissions error"}
-        print "got workflow"
+        if VERBOSE: print "got workflow"
         instID = getID(data["instanceVarInstancesSelect"])
         if instID == None: return {"updates": {}, "message": "instance id error"}
         instance = InstanceTemplate.findByID(SESSION, instID, user)
-        print "got instance"
+        if VERBOSE: print "got instance"
         if instance == None: return {"updates": {}, "message": "user permissions error"}
         instance.updateVarDict(parseVariables(data), user)
-        print "updated vars"
+        if VERBOSE: print "updated vars"
     else:
         workflow = WorkflowTemplate.findByID(SESSION, getID(data["instanceWorkflowsSelect"]), user)
         if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
@@ -474,23 +475,23 @@ def saveInstance(user, data, variables, delete):
         instID = getID(data["instanceInstancesSelect"])
         dependencies = [InstanceTemplate.findByID(SESSION, iid, user) for iid in list(set([getID(idname) for idname in data.getlist("instanceDependenciesSelect")]))]
         if None in dependencies: return {"updates": {}, "message": "user permissions error on instance dependencies"}
-        print "test"
+        if VERBOSE: print "test"
         ex_tags = data["ex_tags"]
-        print ex_tags
+        if VERBOSE: print ex_tags
         ex_metadata = data["ex_metadata"]
-        print ex_metadata
+        if VERBOSE: print ex_metadata
         ex_network = data["ex_network"]
-        print ex_network
+        if VERBOSE: print ex_network
         numLocalSSD = data["numLocalSSD"]
-        print numLocalSSD
+        if VERBOSE: print numLocalSSD
         if "preemptible" not in data:
             preemptible = False
         else:
             preemptible = (data["preemptible"]=="T")
-        print preemptible
+        if VERBOSE: print preemptible
         ## edit old instance or make new instance
         if instID != None:
-            print "updating instance"
+            if VERBOSE: print "updating instance"
             instance = InstanceTemplate.findByID(SESSION, instID, user)
             if instance == None: 
 #                 instance = InstanceTemplate(name, machineType, location, bootDisk, readDisks, 
@@ -500,7 +501,7 @@ def saveInstance(user, data, variables, delete):
                                   readWriteDisks, dependencies, ex_tags, ex_metadata,
                                   ex_network, numLocalSSD, preemptible)
         else:
-            print "adding instance"
+            if VERBOSE: print "adding instance"
             instance = InstanceTemplate(name.lower(), machineType, location, bootDisk, readDisks, 
                                         readWriteDisks, dependencies, workflow, ex_tags, 
                                         ex_metadata, ex_network, numLocalSSD, preemptible)
@@ -513,7 +514,7 @@ def saveInstance(user, data, variables, delete):
 @app.route("/api/_getuserdata", methods=['GET'])
 def getUserData():
     user = getCurrentUser()
-    print user.getUserData()
+    if VERBOSE: print user.getUserData()
     return jsonify({"data": user.getUserData(),
             "message": "updated data"})
 
@@ -522,21 +523,21 @@ def workflowLauncher(user, data, stop):
         wfid = getID(request.form["activeWorkflowSelect"])
     else:
         wfid = getID(request.form["launcherWorkflowSelect"])
-    print "finding workflow"
+    if VERBOSE: print "finding workflow"
     wf = WorkflowTemplate.findByID(SESSION, wfid, user)
-    print "found workflow"
+    if VERBOSE: print "found workflow"
     if wf == None: return {"updates": {}, "message": "user permissions error for workflow"}
     if not stop:
-        print os.path.join(app.config["LOGFILEDIRECTORY"], user.name)
-        print getTimeStampedFile(wf.name)
-        print os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
+        if VERBOSE: print os.path.join(app.config["LOGFILEDIRECTORY"], user.name)
+        if VERBOSE: print getTimeStampedFile(wf.name)
+        if VERBOSE: print os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wf.name))
-        print logfilename
+        if VERBOSE: print logfilename
         address = request.url_root
-        print address
+        if VERBOSE: print address
         wf.startWorkflow(SESSION, logfilename, address)
     else:
-        print "stopping workflow"
+        if VERBOSE: print "stopping workflow"
         wf.stopWorkflow(SESSION)
     return {"updates": {"active_workflows": user.getActiveWorkflows()},  
             "message": "started workflow"}
@@ -558,14 +559,14 @@ def workflowLauncher(user, data, stop):
     
 @app.route("/api/_workflows", methods=['POST'])
 def workflowEditor():
-    print request.form
-    print request.form.getlist
+    if VERBOSE: print request.form
+    if VERBOSE: print request.form.getlist
     user = getCurrentUser()
     updatetype = request.form["submitType"]
     edittype = request.form["editType"]
     result = {"message":"test message", "updates":"test updates"}
     formData = request.form
-    print updatetype
+    if VERBOSE: print updatetype
     if updatetype=="workflow":
         result = newWorkflow(user, formData, edittype=="new", edittype=="delete")
     elif updatetype=="disk":
@@ -580,7 +581,7 @@ def workflowEditor():
         result = saveCredentials(user, formData, request.files, edittype=="delete")
     elif updatetype=="launchworkflow":
         result = workflowLauncher(user, formData, edittype=="stop")
-    print result
+    if VERBOSE: print result
     return jsonify(result)
 
 @app.route('/oauth/access_token')
@@ -607,7 +608,7 @@ def commands():
     if request.method == "GET":
         client = request.oauth.client
         return jsonify({c.id: c.toSummary() for c in client.instance.commands})
-        print request.oauth.__dict__.keys()
+        if VERBOSE: print request.oauth.__dict__.keys()
         return jsonify({"this":"worked!"})
     else:
 #         return jsonify({"this":"worked!"})
@@ -616,7 +617,7 @@ def commands():
         return jsonify({"this":"worked!"})
 #         SESSION.add(client.instance)
 #         SESSION.commit()
-        print "back to app"
+        if VERBOSE: print "back to app"
         return jsonify({"this":"worked!"})
 
 @app.route('/api/finish', methods=['GET'])
@@ -627,7 +628,7 @@ def finish():
     '''
     if request.method == "GET":
         client = request.oauth.client
-        print "finishing"
+        if VERBOSE: print "finishing"
         return jsonify({})
         return jsonify(client.instance.finish(SESSION))
 
@@ -696,7 +697,7 @@ def getUser(redirect_dest="index"):
     user, redirect_return = None, None
     if 'username' not in session:
         flash("You requested a restricted access page. Please login.")
-        print "You requested a restricted access page. Please login."
+        if VERBOSE: print "You requested a restricted access page. Please login."
         redirect(url_for('login'))
         redirect_return = redirect(url_for('login'))
     else:
@@ -738,16 +739,16 @@ def login():
         error = None
         if isinstance(user, basestring):
             error = user
-            print error
+            if VERBOSE: print error
         else:
             session['username'] = user.name
             if "admin" in user.role: 
                 session["admin"]=True
             else: 
                 session["admin"]=False
-            print 'You were successfully logged in'
+            if VERBOSE: print 'You were successfully logged in'
             return redirect(url_for('index'))
-        print session["username"]
+        if VERBOSE: print session["username"]
         return render_template('login_modern.html', error=error)
     return render_template('login_modern.html')
 

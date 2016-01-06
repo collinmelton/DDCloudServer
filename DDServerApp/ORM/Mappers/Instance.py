@@ -11,6 +11,8 @@ from DDServerApp.ORM.Mappers import InstanceCommand#, GCEManagerBinding, LogFile
 import sys, time
 from Disk import Disk
 
+VERBOSE = False
+
 class InstanceDependencyRelation(orm.Base):
     '''
     This relation maps many instances to many instances. 
@@ -97,7 +99,7 @@ class Instance(orm.Base):
         self.network = network
         self.tagString = tagString
         self.metadataString = metadataString
-        self.node_params = self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
+        self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
         self.gce_manager = gce_manager
         self.log = log
         self._initCommands()
@@ -107,14 +109,14 @@ class Instance(orm.Base):
     # correct instance commands and sending back performance data associated with these commands 
     def _getClientAndAccessTokens(self, session):
         from Oauth import Client
-        print self.client
+        if VERBOSE: print self.client
         if self.client == []:
             client = Client(self.name, "instance client", self.workflows[0].user, ["full"], [], self)
             session.add(client)
             session.commit()
         else: 
             client = self.client[0]
-        print "client.accesstoken", client.accesstoken
+        if VERBOSE: print "client.accesstoken", client.accesstoken
         if client.accesstoken == []:
             accesstoken = client.createAccessToken(session)
             session.add(accesstoken)
@@ -128,12 +130,14 @@ class Instance(orm.Base):
         # parse startup commands
         startup_commands = "\n".join([self._mountDisksScript(), self._setActiveGcloudAuthAccount(), 
                                       self._initialize_disks()]).split("\n")
+        startup_commands = [c for c in startup_commands if c!=""]                                      
         # add startup commands
         startup_commands = self.addCommandSequence(startup_commands, "startup", [])
         # parse and add commands
         commands = self.parseCommandDict(startupCommands=startup_commands)
         # parse commands 
         shutdown_commands = (self._save_disk_content()+"\n"+self._unmountDisksScript()).split("\n")
+        shutdown_commands = [c for c in shutdown_commands if c!=""]
         # add commands
         shutdown_commands = self.addCommandSequence(shutdown_commands, "shutdown", commands)
         
@@ -215,8 +219,12 @@ class Instance(orm.Base):
         for param, val in [("size", machine_type), ("image", image_name), ("location", location),
                            ("ex_network", network)]:
             node_params[param]=val
+        if node_params["ex_network"]=="": node_params["ex_network"] = "default"
         # parse ex_tags
-        node_params["ex_tags"]=tags.split("|")
+        if tags == "":
+            node_params["ex_tags"]=[] 
+        else: 
+            node_params["ex_tags"]=tags.split("|")
         # parse ex_metadata and add to node params
         node_params["ex_metadata"]={'items': []}
         for pair in metadata.split("|"):
@@ -317,11 +325,6 @@ class Instance(orm.Base):
             return True
         # if failed or other do nothing
         return False
-#         # if had gce error restart
-#         if self.status=="gce error" or self.status=="failed":
-#             self.destroy()
-#             self.create()
-#             return True
 
     # finish and start new instances if ready
     def finish(self, session):
@@ -339,19 +342,17 @@ class Instance(orm.Base):
                 self.failed=False
                 self.destroyed=False
                 self.status="started"
-                self.log.write(self.name+"is already created!!")
-    
-
-    
+                self.log.write(self.name+"is already created!!")   
     
 #     # package script in python script shell
 #     # the StartupWrapper.py program executes the script, saves the output to google cloud storage and updates the project meta data on start and completion
     def packageScript(self, session):          
         clientKey, clientSecret, tokenKey, tokenSecret = self._getClientAndAccessTokens(session)
         address = self.workflows[0].address
-        result = "\n/usr/local/bin/python2.7 "+self.rootdir+"DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address
+        result = "\n/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address
+        if VERBOSE: print result
         return result
-# 
+# /DDServerApp/Utilities/Worker.py
 #     def packageScriptNew(self):
 #         script = self._mountDisksScript()+"\n"+self._setActiveGcloudAuthAccount()+"\n"+self._initialize_disks()+"\n"+self.script+"\n"+self._save_disk_content()
 #         shutdownscript = self._unmountDisksScript()
@@ -365,72 +366,101 @@ class Instance(orm.Base):
     # create and run node on GCE
     def create(self, session, restart = False):
         if not self.created: 
-            print self.packageScript(session)
-            return 
+#             print self.packageScript(session)
+#             return 
             #raise Exception('Trying to create already created instance on '+self.name)
             # make sure all necessary disks are created
+            read_disks = []
             for disk in self.read_disks:
                 if not disk.created:
-                    disk.create()
+                    read_disks.append(disk.create())
+                else:
+                    read_disks.append(disk.updateDisk())
+            read_write_disks = []
             for disk in self.read_write_disks:
                 if not disk.created:
-                    disk.create()
-            if self.boot_disk.disk != None:
+                    read_write_disks.append(disk.create())
+                else:
+                    read_write_disks.append(disk.updateDisk())
+            
+            # if boot disk exists delete and make new
+            if self.boot_disk.updateDisk() != None:
                 self.boot_disk.destroy()
-            self.boot_disk.create()
+            boot_disk = self.boot_disk.create()
             self.boot_disk.formatted=True # make sure to indicate that it is formatted because a boot disk will be formatted on startup
                 
             # add startup script to metadata and make sure drive mounting is added to startup script
             if not restart:
+                if VERBOSE: print "before", self.node_params["ex_metadata"]["items"]
+                if VERBOSE: print "adding", {"key":"startup-script", "value":self.packageScript(session)}
                 self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript(session)})
+                if VERBOSE: print "after", self.node_params["ex_metadata"]["items"]
 
             # change mode of disks and prepare them in a list for node creation
             for disk in self.read_disks:
                 disk.mode="READ_ONLY"
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
-            additionalDisks=self.read_disks+self.read_write_disks
+            additionalDisks=read_disks+read_write_disks
+            
             # create node = GCE instance
             i=0
-            while self.node==None:
+            node = None
+            while node==None:
                 i+=1
-                self.boot_disk.updateDisk()
-                self.node=self.trycommand(self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
+                if VERBOSE: print self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], self.node_params["location"]
+                if VERBOSE: print self.node_params["ex_network"], self.node_params["ex_tags"], self.node_params["ex_metadata"]
+                if VERBOSE: print boot_disk
+                if VERBOSE: print additionalDisks, self.preemptible, self.numLocalSSD, self.log
+#                 self.gce_manager.create_node(self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
+#                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
+#                                       ex_boot_disk=boot_disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
+#                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
+#                 
+                node=self.trycommand(self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
-                                      ex_boot_disk=self.boot_disk.disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
+                                      ex_boot_disk=boot_disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
-                if self.node==None:
-                    self.node=self.trycommand(self.gce_manager.ex_get_node, self.name)
+                if node==None:
+                    node=self.trycommand(self.gce_manager.ex_get_node, self.name)
                 if i==2:
                     self.printToLog("failed to create instance on GCE")
                     break
+                self.node = node
             self.printToLog("created instance on GCE")
             self.created=True
             self.failed=False
             self.destroyed=False
             self.status="started"
         else: self.printToLog("instance already created on GCE")
+        session.add(self)
+        session.commit()
     
-    # update node by checking if it exists on GCE
+    # update and return node by checking if it exists on GCE
     def updateNode(self):
-        self.node=self.trycommand(self.gce_manager.ex_get_node, self.name)
-        if self.node == None: self.destroyed=True
+        if "node" not in self.__dict__ or self.node == None: 
+            node=self.trycommand(self.gce_manager.ex_get_node, self.name)
+        else: 
+            node = None
+        self.node = node 
+        return node
     
     # destroy node on GCE
     def destroy(self, instances=None, destroydisks=True, force = False):
-        self.updateNode()
+        node = self.updateNode()
         # detatch disks and destroy if not needed
         for disk in self.read_disks:
-            if not force and self.node!=None: disk.detach(self)
+            if not force and node!=None: disk.detach(self)
             if destroydisks:
                 disk.destroyifnotneeded(instances)
         for disk in self.read_write_disks:
-            if not force and self.node!=None: disk.detach(self)
+            if not force and node!=None: disk.detach(self)
             if destroydisks: 
                 disk.destroyifnotneeded(instances)
         # destroy node
-        if self.node!=None and not self.destroyed:
-            self.trycommand(self.gce_manager.destroy_node, self.node)
+        if node!=None and not self.destroyed:
+            self.trycommand(self.gce_manager.destroy_node, node)
+            node = None
             self.node=None
             self.printToLog("destroyed instance on GCE")
             # self.boot_disk.destroy() # boot disk seems to destroy itself so commenting this out

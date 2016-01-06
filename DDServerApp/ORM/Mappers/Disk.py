@@ -14,6 +14,8 @@ from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, 
 from DDServerApp.ORM import BASE_DIR, Boolean
 #from DDServerApp.ORM.Mappers import GCEManagerBinding, LogFile
 
+VERBOSE = False
+
 class Disk(orm.Base):
     '''
     This class represents a disk to be generated on the Google Compute Engine.
@@ -133,24 +135,32 @@ class Disk(orm.Base):
     def create(self):
         self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created)+" None: "+str(self.disk==None))
         if self.destroyed or not self.created:
-            self.disk=self.trycommand(self.gce_manager.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
+            disk=self.trycommand(self.gce_manager.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
             self.created=True
             self.destroyed=False
             self.printToLog("created disk on GCE")
         else:
             self.printToLog("did not create disk on GCE")
+            disk = None
+        self.disk = disk
+        return disk
     
     # method to update disk with current disk on GCE
     def updateDisk(self):
         self.printToLog("updating disk "+self.name)
-        self.disk=self.trycommand(self.gce_manager.ex_get_volume, self.name)
-        if self.disk == None: self.destroyed=True
+        if (self.created): # and ("disk" not in self.__dict__ or self.disk ==None): 
+            disk=self.trycommand(self.gce_manager.ex_get_volume, self.name)
+            if VERBOSE: print "updated disk", disk
+        else: disk = None
+        self.disk = disk
+        return disk
     
     # destroy disk on GCE
     def destroy(self):
-        self.updateDisk()
+        disk = self.updateDisk()
+        if VERBOSE: print "created", self.created, "destroyed", self.destroyed
         if self.created and not self.destroyed: 
-            self.trycommand(self.gce_manager.destroy_volume,self.disk)
+            self.trycommand(self.gce_manager.destroy_volume, disk)
             self.printToLog("destroyed disk on GCE")
         self.destroyed=True
         self.disk = None
@@ -165,20 +175,24 @@ class Disk(orm.Base):
                 if self.name in disk_names:
                     if instances[instance_name].status!="complete":
                         return
-            print "should destroy "+self.name
+            if VERBOSE: print "should destroy "+self.name
             self.destroy()
 
     # attach disk to instance
     def attach(self, instance):
         self.printToLog("attached disk to "+instance.name+" on GCE")
+        disk = self.updateDisk()
+        node = instance.updateNode()
         if instance.node!=None:
-            self.trycommand(self.disk.attach, instance.node)
+            self.trycommand(disk.attach, node)
     
     # detach disk from instance
     def detach(self, inst):
         if self.created and not self.destroyed:
+            disk = self.updateDisk()
+            node = inst.updateNode()
             self.printToLog("trying to detach disk on GCE from "+inst.name)
-            self.trycommand(self.gce_manager.detach_volume, self.disk, inst.node)
+            self.trycommand(self.gce_manager.detach_volume, disk, node)
             self.printToLog("detached disk on GCE from "+inst.name)
 
     # try command for certain number of tries, sometimes GCE API doesn't work the first time its called
