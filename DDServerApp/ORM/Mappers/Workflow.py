@@ -11,7 +11,7 @@ import sys, time, copy, thread, datetime, inspect
 from DDServerApp.ORM.Mappers import User, WorkflowTemplate, Disk, Instance
 from DDServerApp.Utilities.GCEManager import GCEManager 
 
-VERBOSE = False
+VERBOSE = True
 
 class DiskWorkflowLink(orm.Base):
     '''

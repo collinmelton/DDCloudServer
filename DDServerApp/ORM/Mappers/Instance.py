@@ -11,7 +11,7 @@ from DDServerApp.ORM.Mappers import InstanceCommand#, GCEManagerBinding, LogFile
 import sys, time
 from Disk import Disk
 
-VERBOSE = False
+VERBOSE = True
 
 class InstanceDependencyRelation(orm.Base):
     '''

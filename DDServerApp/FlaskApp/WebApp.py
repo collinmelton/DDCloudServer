@@ -5,7 +5,7 @@ Created on Oct 20, 2014
 '''
 
 import sys, os, json, datetime, time
-VERBOSE = False
+VERBOSE = True
 
 path = os.getcwd().split("DDServerApp")[0]
 if not path in sys.path:

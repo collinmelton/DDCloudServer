@@ -14,7 +14,7 @@ from DDServerApp.ORM import orm,Column,relationship,String,Integer, PickleType, 
 from DDServerApp.ORM import BASE_DIR, Boolean
 #from DDServerApp.ORM.Mappers import GCEManagerBinding, LogFile
 
-VERBOSE = False
+VERBOSE = True
 
 class Disk(orm.Base):
     '''
