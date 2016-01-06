@@ -608,17 +608,12 @@ def commands():
     if request.method == "GET":
         client = request.oauth.client
         return jsonify({c.id: c.toSummary() for c in client.instance.commands})
-        if VERBOSE: print request.oauth.__dict__.keys()
-        return jsonify({"this":"worked!"})
     else:
-#         return jsonify({"this":"worked!"})
         client = request.oauth.client
         client.instance.updateCommandData(json.loads(request.data))
         return jsonify({"this":"worked!"})
-#         SESSION.add(client.instance)
-#         SESSION.commit()
-        if VERBOSE: print "back to app"
-        return jsonify({"this":"worked!"})
+        SESSION.add(client.instance)
+        SESSION.commit()
 
 @app.route('/api/finish', methods=['GET'])
 @oauth.require_oauth('full')
