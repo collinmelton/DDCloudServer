@@ -14,6 +14,7 @@ if __name__ == '__main__':
     app.run(debug=False) # debug must be off on production for security reasons
     
 else: 
-    import logging
+    import logging, Crypto
+    Crypto.Random.atfork()
     logging.basicConfig()
     print "NOT MAIN!!"
