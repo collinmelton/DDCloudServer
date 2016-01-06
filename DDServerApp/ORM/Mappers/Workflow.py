@@ -101,6 +101,8 @@ class GCEManagerBinding(orm.Base):
         self.manager = self._ensureManagerExists()
     
     def _ensureManagerExists(self):
+        import Crypto
+        Crypto.Random.atfork()
         if "manager" not in self.__dict__ or self.manager==None: 
             if VERBOSE: print "making manager"
             self.manager = GCEManager(self.user_id, self.key, datacenter=self.datacenter, 
