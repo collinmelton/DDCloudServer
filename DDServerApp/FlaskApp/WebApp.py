@@ -623,6 +623,7 @@ def finish():
     '''
     Returns command info in json form.
     '''
+    if VERBOSE: print "FINISHING!!!"
     if request.method == "GET":
         client = request.oauth.client
         if VERBOSE: print "finishing"
