@@ -161,6 +161,7 @@ if __name__ == "__main__":
     options = getOptions()
     w = Worker(options.tokenKey, options.tokenSecret, options.clientKey, options.clientSecret, options.address)
     w.run()
+    w.finish()
 #     token_key = 'TWuEjpsLpabBe6ImkdG37PbtX'
 #     token_secret = '7GslLWSHTa0jblFCl9hk33oiJ'
 #     client_props = {'client_secret': u's8rPirVz7uLF0vNmwHCKMCzxL', 'client_key': u'hdqLvlmpcWOsnHPQHGyRG9V5O'}
