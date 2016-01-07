@@ -39,6 +39,7 @@ class Disk(orm.Base):
     gce_manager = relationship("GCEManagerBinding", backref = "disks")
     log_id = Column(Integer, ForeignKey("logfile.id"))
     log = relationship("LogFile", backref = "disks")
+    size = Column(Integer)
 
     def __init__(self, name, size, location, snapshot=None, image=None, disk_type = 'pd-standard', 
                  init_source="", shutdown_dest="", gce_manager=None, log = None):
