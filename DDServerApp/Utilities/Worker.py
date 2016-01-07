@@ -5,7 +5,7 @@ Created on Dec 3, 2015
 '''
 
 
-import sys, os, inspect
+import sys, os, inspect, thread
 
 path = inspect.getfile(inspect.currentframe()).split("DDServerApp")[0]
 print path
@@ -80,6 +80,7 @@ class Worker(object):
         self.first_commands = []
         self.communicator = self._initCommunicator()
         self.base_address = base_address
+        self.lock=thread.allocate_lock()
 #         self.getCommands()
     
     def _initCommunicator(self):
@@ -89,21 +90,23 @@ class Worker(object):
         '''
         return Communicator(self.client_key, self.client_secret, self.token_key, self.token_secret)
     
-    def _sendData(self, data, data_type):
-        '''
-        This method sends data to the master instance.
-        '''
-        pass
-    
-    def _getData(self, data_type):
-        '''
-        This method gets data from the master instance.
-        '''
-        pass
+#     def _sendData(self, data, data_type):
+#         '''
+#         This method sends data to the master instance.
+#         '''
+#         pass
+#     
+#     def _getData(self, data_type):
+#         '''
+#         This method gets data from the master instance.
+#         '''
+#         pass
     
     def updateCommandData(self, data):
+        self.lock.acquire()
         print "posting data"
         result = self.communicator.post(self.base_address.strip("/")+"/api/commands", data)
+        self.lock.release()
         if VERBOSE: print result
         
     
