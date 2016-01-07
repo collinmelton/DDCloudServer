@@ -314,6 +314,20 @@ class Instance(orm.Base):
 
     # check if instance is ready and if yes start job
     def startIfReady(self, session):
+        # make sure if created it is either failed or completed or an active instance
+        if self.created and not self.failed and self.status !="completed":
+            node = self.updateNode()
+            if node == None: 
+                # set created to false
+                self.created = False
+                # reset commands by deleting old and making new
+                print "command status", [c.finished for c in self.commands]
+                for c in self.commands: session.delete(c)
+                self._initCommands()
+                session.add(self)
+                session.commit()
+                print "command status", [c.finished for c in self.commands]
+        
         self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
         if self.status=="completed": 
