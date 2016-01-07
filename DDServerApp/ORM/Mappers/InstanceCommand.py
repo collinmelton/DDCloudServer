@@ -257,6 +257,8 @@ class InstanceCommand(orm.Base):
         result['end_time'] = self.end_time
         if self.command_performance!=None:
             result["process_id"] = self.command_performance.process_id
+        else:
+            result["process_id"] = None
         result["id"] = self.id
         return result
     
