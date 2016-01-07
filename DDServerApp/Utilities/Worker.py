@@ -141,7 +141,7 @@ class Worker(object):
             thread.join()
             
     def finish(self):
-        self.communicator.get(self.base_address+"/api/finish")
+        self.communicator.get(self.base_address.strip("/")+"/api/finish")
         
 from optparse import OptionParser
 
