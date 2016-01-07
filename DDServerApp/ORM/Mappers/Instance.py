@@ -336,8 +336,11 @@ class Instance(orm.Base):
         result = {}
         if self.status == "completed":
             self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)
-            for instance in self.dependencies:
+            for instance in self.next_instances:
+                print "checking if ready", instance.name
                 result[instance.name]=instance.startIfReady(session)
+        session.add(self)
+        session.commit()
         print "finishing result", result
         return result
 
