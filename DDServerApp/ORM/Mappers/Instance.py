@@ -316,7 +316,7 @@ class Instance(orm.Base):
     def startIfReady(self, session):
         self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
-        if self.status=="complete": return False
+        if self.status=="completed": return False
         # if dependencies not ready do nothing
         if not self.__dependenciesReady(): return False
         # if not created create and not failed its ready so create
@@ -329,10 +329,16 @@ class Instance(orm.Base):
     # finish and start new instances if ready
     def finish(self, session):
         self.failed = any([c.failed for c in self.commands])
-        self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)
+        if self.failed: self.status = "errored"
+        if not self.failed and all([c.finished for c in self.commands]):
+            self.status = "completed"
+        print "status:", self.status
         result = {}
-        for instance in self.dependencies:
-            result[instance.name]=instance.startIfReady(session)
+        if self.status == "completed":
+            self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)
+            for instance in self.dependencies:
+                result[instance.name]=instance.startIfReady(session)
+        print "finishing result", result
         return result
 
     # given list of instances/nodes set node attribute if has the same name
