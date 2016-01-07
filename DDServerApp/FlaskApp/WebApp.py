@@ -610,7 +610,9 @@ def commands():
         return jsonify({c.id: c.toSummary() for c in client.instance.commands})
     else:
         client = request.oauth.client
+        if VERBOSE: print "command update:", request.data
         client.instance.updateCommandData(json.loads(request.data))
+        
         return jsonify({"this":"worked!"})
         SESSION.add(client.instance)
         SESSION.commit()
