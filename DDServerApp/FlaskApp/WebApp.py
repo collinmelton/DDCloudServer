@@ -612,10 +612,10 @@ def commands():
         client = request.oauth.client
         if VERBOSE: print "command update:", request.data
         client.instance.updateCommandData(json.loads(request.data))
-        
-        return jsonify({"this":"worked!"})
         SESSION.add(client.instance)
-        SESSION.commit()
+        SESSION.commit()        
+        return jsonify({"this":"worked!"})
+
 
 @app.route('/api/finish', methods=['GET'])
 @oauth.require_oauth('full')
