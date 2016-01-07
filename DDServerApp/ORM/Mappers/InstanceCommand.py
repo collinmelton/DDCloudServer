@@ -190,6 +190,7 @@ class InstanceCommand(orm.Base):
         # set end time
         self.end_time=whatTimeIsIt()
         self.finished = True
+        self.updateServer(worker = worker)
         return self.failed    
         
     def updatePerformance(self):
