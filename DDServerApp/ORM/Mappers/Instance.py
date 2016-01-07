@@ -330,8 +330,10 @@ class Instance(orm.Base):
     def finish(self, session):
         self.failed = any([c.failed for c in self.commands])
         self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)
+        result = {}
         for instance in self.dependencies:
-            instance.startIfReady(session)
+            result[instance.name]=instance.startIfReady(session)
+        return result
 
     # given list of instances/nodes set node attribute if has the same name
     def setInstances(self, nodes):
