@@ -307,7 +307,7 @@ class Instance(orm.Base):
     # check to see if dependencies (instances required to complete before this one can start) have completed
     def __dependenciesReady(self):
         for d in self.dependencies:
-            if not d.status=="complete":
+            if not d.status=="completed":
                 self.printToLog(str(d)+" not ready")
                 return False
         return True
@@ -316,13 +316,18 @@ class Instance(orm.Base):
     def startIfReady(self, session):
         self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
-        if self.status=="completed": return False
+        if self.status=="completed": 
+            print "status is", self.status
+            return False
         # if dependencies not ready do nothing
-        if not self.__dependenciesReady(): return False
+        if not self.__dependenciesReady(): 
+            print "dependencies not ready"
+            return False
         # if not created create and not failed its ready so create
         if not self.created and not self.failed:
             self.create(session)
             return True
+        print "nothing else to do", self.created, self.failed
         # if failed or other do nothing
         return False
 
