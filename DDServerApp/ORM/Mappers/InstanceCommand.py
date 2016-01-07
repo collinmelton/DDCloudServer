@@ -275,13 +275,13 @@ class InstanceCommand(orm.Base):
         if VERBOSE: print data["end_time"]
         if type(data["end_time"]) == float:
             data["end_time"] = datetime.datetime.fromtimestamp(data["end_time"])
-        self.end_time = data["end_time"]
+            self.end_time = data["end_time"]
         if VERBOSE: print data["finished"]
-        self.finished = data["finished"]
+        self.finished = (data["finished"] or self.finished)
         if VERBOSE: print data["failed"]
-        self.failed = data["failed"]
+        self.failed = (data["failed"] or self.failed)
         if VERBOSE: print data["result"]
-        self.result = data["result"]
+        if data["result"]!="": self.result = data["result"]
         if VERBOSE: print "updating command performance"
         if VERBOSE: print data["process_id"]
         if self.command_performance == None:
