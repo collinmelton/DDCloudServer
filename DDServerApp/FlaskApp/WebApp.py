@@ -626,7 +626,6 @@ def finish():
     if request.method == "GET":
         client = request.oauth.client
         if VERBOSE: print "finishing"
-        return jsonify({})
         return jsonify(client.instance.finish(SESSION))
 
 # @app.route('/trial/', methods=['GET','POST'])
