@@ -82,6 +82,7 @@ class CheckPerformanceThread(Thread):
                 time.sleep(PERFORMANCE_INTERVAL)
                 # update server if its been the right amount of time
                 self.command.updateServer(worker = self.worker)
+        self.command.updateServer(worker = self.worker)
                  
         
 class InstanceCommand(orm.Base):
@@ -263,7 +264,7 @@ class InstanceCommand(orm.Base):
         '''
         Updates command status and adds performance data.
         '''
-        if VERBOSE: print "UPDATING COMMAND DATA!!!"
+        if VERBOSE: print "UPDATING COMMAND DATA!!!", self.command
         if VERBOSE: print data["start_time"]
         if type(data["start_time"]) == float:
             data["start_time"] = datetime.datetime.fromtimestamp(data["start_time"])
