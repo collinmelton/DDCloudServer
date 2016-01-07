@@ -167,6 +167,9 @@ class InstanceCommand(orm.Base):
         # wait for process to finish
         running_subprocess.wait()
         self.result = running_subprocess.stdout.read()
+        if VERBOSE: 
+            print "COMMAND:", self.command
+            print "RESULT:", self.result
         error = running_subprocess.stderr.read()
         return_code = running_subprocess.returncode
         # stop the performance thread
@@ -250,7 +253,8 @@ class InstanceCommand(orm.Base):
         result["result"] = self.result
         result['start_time'] = self.start_time
         result['end_time'] = self.end_time
-        result["process_id"] = self.command_performance.process_id
+        if self.command_performance!=None:
+            result["process_id"] = self.command_performance.process_id
         result["id"] = self.id
         return result
     
