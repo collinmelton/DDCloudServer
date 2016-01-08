@@ -145,7 +145,7 @@ class InstanceCommand(orm.Base):
         return {key: {"value": val, "css":""} for key, val in keyvals}
     
     def getPerformanceTableData(self):
-        data = [['Time (sec)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
+        data = [['Time (min)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
         if self.command_performance!=None:
             times = [tp.time for tp in self.command_performance.timepoints]
             if times !=[]:
@@ -154,9 +154,9 @@ class InstanceCommand(orm.Base):
                     for tp in self.command_performance.timepoints:
                         toappend = []
                         toappend.append(float((tp.time-mintime).total_seconds())/60)
-                        if tp.cpu_percent!= None: toappend.append(tp.cpu_percent)
+                        if tp.cpu_percent!= None: toappend.append(tp.cpu_percent*100)
                         else: toappend.append(0)
-                        if tp.memory_percent != None: toappend.append(tp.memory_percent)
+                        if tp.memory_percent != None: toappend.append(tp.memory_percent*100)
                         else: toappend.append(0)
                         if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000)
                         else: toappend.append(0)
