@@ -1086,6 +1086,12 @@ function setInstancesData(workflow_id) {
 	});
 }
 
+// update instances upon instance name selection
+function updateDashboardInstances() {
+	setInstancesData(splitNameIntoIDAndName($("#dashboardWorkflowNameSelect").val())["id"]);	
+}
+
+
 // updates the workflow selectors on the dashboard page
 function updateDashboardWorkflowSelect(workflows) {
 	var workflow_id = splitNameIntoIDAndName($("#dashboardWorkflowSelect").val())["id"];
