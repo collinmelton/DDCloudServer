@@ -290,9 +290,11 @@ class Instance(orm.Base):
         return("\n".join([tabDelim["header"],tabDelim["values"]]))
 
     # update command data, this is built for data coming from a worker instance
-    def updateCommandData(self, data):
+    def updateCommandData(self, data, session):
         thiscommand = next(c for c in self.commands if c.id == data["id"])
         thiscommand.updateCommandData(data)
+        session.add(thiscommand)
+        session.commit()
         self.printToLog("updated command data")
 
     # restarting instance by destroying and recreating

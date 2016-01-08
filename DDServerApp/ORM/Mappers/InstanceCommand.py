@@ -146,24 +146,25 @@ class InstanceCommand(orm.Base):
     
     def getPerformanceTableData(self):
         data = [['Time (sec)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
-        times = [tp.time for tp in self.command_performance.timepoints]
-        if times !=[]:
-            mintime = min(times)
-            if self.command_performance !=None:
-                for tp in self.command_performance.timepoints:
-                    toappend = []
-                    toappend.append(float((tp.time-mintime).total_seconds())/60)
-                    if tp.cpu_percent!= None: toappend.append(tp.cpu_percent)
-                    else: toappend.append(0)
-                    if tp.memory_percent != None: toappend.append(tp.memory_percent)
-                    else: toappend.append(0)
-                    if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000)
-                    else: toappend.append(0)
-                    if tp.read_bytes!=None: toappend.append(float(tp.read_bytes)/1000000)
-                    else: toappend.append(0)
-                    if tp.write_bytes!=None: toappend.append(float(tp.write_bytes)/1000000)
-                    else: toappend.append(0)
-                    data.append(toappend)
+        if self.command_performance!=None:
+            times = [tp.time for tp in self.command_performance.timepoints]
+            if times !=[]:
+                mintime = min(times)
+                if self.command_performance !=None:
+                    for tp in self.command_performance.timepoints:
+                        toappend = []
+                        toappend.append(float((tp.time-mintime).total_seconds())/60)
+                        if tp.cpu_percent!= None: toappend.append(tp.cpu_percent)
+                        else: toappend.append(0)
+                        if tp.memory_percent != None: toappend.append(tp.memory_percent)
+                        else: toappend.append(0)
+                        if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000)
+                        else: toappend.append(0)
+                        if tp.read_bytes!=None: toappend.append(float(tp.read_bytes)/1000000)
+                        else: toappend.append(0)
+                        if tp.write_bytes!=None: toappend.append(float(tp.write_bytes)/1000000)
+                        else: toappend.append(0)
+                        data.append(toappend)
         else: data.append([0,0,0,0,0,0])
         return data
                 
