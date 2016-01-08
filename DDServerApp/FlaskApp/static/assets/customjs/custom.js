@@ -350,9 +350,15 @@ function getCommandDependencies(workflowSelect, instanceSelect, commandSelect) {
 function getOptions(vars, additionalOptions, selected) {
 	if (typeof vars === 'undefined') { vars = [];}
 	var optionnames = [];
-	$.each(vars, function(index, value) {
+	if (Array.isArray(vars)) {
+		$.each(vars, function(index, value) {
+		optionnames.push(value);
+		});
+	} else {
+		$.each(vars, function(index, value) {
 		optionnames.push(value["id"]+": "+value["name"]);
-	});
+		});
+	}
 	if (typeof additionalOptions === 'undefined') { additionalOptions = [];}
 	optionnames = optionnames.concat(additionalOptions);
 	if (typeof selected === 'undefined') { 
@@ -978,6 +984,133 @@ function initLauncherWorkflowForm() {
 	$("#activeWorkflowSelect").html(getOptions(workflows));
 }
 
+//// CODE FOR DASHBOARD PAGE
+
+function isEmpty(obj) {
+    // null and undefined are "empty"
+    if (obj == null) return true;
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length > 0)    return false;
+    if (obj.length === 0)  return true;
+    // Otherwise, does it have any properties of its own?
+    // Note that this doesn't handle
+    // toString and valueOf enumeration bugs in IE < 9
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key)) return false;
+    }
+    return true;
+}
+
+// generic make gviz table function
+function drawtable(data, elementid, jscode_data) {
+	if (!isEmpty(data)) {
+		// console.log(data);
+		$.each(data.colnames, function(k) {
+			var col = data.colnames[k];
+			var type = col[0];
+			var key = col[1];
+			var name = col[2]; 
+			jscode_data.addColumn(type, name, key);
+		});
+		jscode_data.addRows(data.numrows);
+		var i = 0;
+		$.each(data.rows, function(l) {
+			j=0;
+			var row = data.rows[l];
+			$.each(data.colnames, function(k) {
+				var col = data.colnames[k];
+				var type = col[0];
+				var key = col[1];
+				var name = col[2]; 
+				// console.log(row[key]["value"]);
+				// console.log(row[key]["css"]);
+				jscode_data.setCell(i, j, row[key]["value"]);
+				jscode_data.setProperty(i, j, 'style', row[key]["css"]);
+				j+=1;
+			});
+			i+=1;
+		});
+		// console.log(elementid);
+		// console.log(jscode_data);
+		jscode_table = new google.visualization.Table(document.getElementById(elementid));
+		jscode_table.draw(jscode_data, {showRowNumber: false, allowHtml: true});
+		return jscode_data, jscode_table;			
+	} else {
+		$("#"+elementid).html("");
+	}
+}
+
+// some javascript to generate gviz datatables for variant, clinical trial, guidelines info, etc
+function getDashboardData(data_type, data, callback) {
+	console.log(data_type)
+	console.log(data);
+	data["type"]=data_type;
+	$.get(getBaseUrl() + 'api/_getdashboarddata', data, function(data, textStatus) {
+        //if (data["message"]!="") {alert(data["message"]);}
+		console.log(data);
+		callback(data["data"]);
+    }, "json");
+}
+
+function drawChart(raw_data, options, element_id) {
+	var data = google.visualization.arrayToDataTable(raw_data);
+	var chart = new google.visualization.LineChart(document.getElementById(element_id));
+    chart.draw(data, options);
+}	
+
+function toggleCommand(workflow_id, instance_id, command_id) {
+	getDashboardData("performance", {"instance_id":instance_id, 
+	"command_id":command_id, "workflow_id":workflow_id}, function(chart_data) {
+		var options = {
+			// title: 'Command Performance',
+			// curveType: 'function',
+			legend: {position: 'bottom'}
+		};
+		drawChart(chart_data, options, "command_chart");
+	});
+}
+
+function toggleCommands(workflow_id, instance_id) {
+	getDashboardData("commands", {"instance_id":instance_id, "workflow_id":workflow_id}, function(table_data) {
+		var jscode_data = new google.visualization.DataTable();
+		drawtable(table_data, "commands_table", jscode_data);	
+	});
+}
+
+// draw instances table
+function setInstancesData(workflow_id) {
+	getDashboardData("instances", {"workflow_id":workflow_id}, function(table_data) {
+		var jscode_data = new google.visualization.DataTable();
+		drawtable(table_data, "instances_table", jscode_data);	
+	});
+}
+
+// updates the workflow selectors on the dashboard page
+function updateDashboardWorkflowSelect(workflows) {
+	var workflow_id = splitNameIntoIDAndName($("#dashboardWorkflowSelect").val())["id"];
+	var workflownames = workflows[workflow_id]["names"];
+	$("#dashboardWorkflowNameSelect").html(getOptions(workflownames));
+	setInstancesData(splitNameIntoIDAndName($("#dashboardWorkflowNameSelect").val())["id"]);
+}
+
+// update without initializing first
+function updateDashboardWorkflowsSelectWithoutInit() {
+	getDashboardData("workflows", {}, function(workflows) {
+		updateDashboardWorkflowSelect(workflows);	
+	}); 
+}
+
+// initializes the dashboard page
+function initDashboard() {
+	getDashboardData("workflows", {}, function(workflows) {
+		console.log(getOptions(workflows));
+		$("#dashboardWorkflowSelect").html(getOptions(workflows));
+		updateDashboardWorkflowSelect(workflows);	
+	}); 
+}
+
+
 //// CODE TO RUN ON PAGE LOADING
 
 function updatePageElements(page) {
@@ -997,6 +1130,7 @@ function updatePageElements(page) {
     	initLauncherWorkflowForm();
     } else if (page =="dashboard") {
     	console.log("dashboard");
+    	initDashboard();
     }
     	
 }

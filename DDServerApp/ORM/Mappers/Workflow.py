@@ -167,6 +167,7 @@ class Workflow(orm.Base):
     gce_manager_id = Column(Integer, ForeignKey("gcemanagerbinding.id"))
     gce_manager = relationship(GCEManagerBinding, backref = "workflows")
     address = Column(String)
+    name = Column(String)
 
     def __init__(self, name, workflowtemplate, user, logfilename, address, gceManagerExtraArgs = {}):
         '''
@@ -191,7 +192,7 @@ class Workflow(orm.Base):
                 "name": self.name}
     
     # a unique name for GCE
-    def name(self):
+    def gce_name(self):
         return "-".join(map(str, [self.workflowtemplate.id, self.id, self.workflowname]))
     
     # starts the workflow
@@ -225,7 +226,7 @@ class Workflow(orm.Base):
 
     # string output
     def __str__(self):
-        return "workflow object: "+self.name()
+        return "workflow object: "+self.gce_name()
     
     # representation output
     def __repr__(self):

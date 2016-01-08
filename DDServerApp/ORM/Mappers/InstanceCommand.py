@@ -128,6 +128,58 @@ class InstanceCommand(orm.Base):
     def __repr__(self):
         return str(self)
     
+    @staticmethod
+    def getTableNames():
+        return [("string", "command", "Command"), 
+        ("string", "command_type", "Command Type"),
+        ("boolean", "finished", "Finished?"),
+        ("boolean", "failed", "Failed?"),
+        ("string", "result", "Result")]
+    
+    def getTableData(self):
+        keyvals = [("command", "<a onclick='toggleCommand(\""+str(self.instance.workflows[0].id)+"\", \""+str(self.instance.id)+"\", \""+str(self.id)+"\");'>"+self.command+"</a>"), 
+                ("command_type", self.command_type),
+                ("finished", self.finished),
+                ("failed", self.failed),
+                ("result", str(self.result))]
+        return {key: {"value": val, "css":""} for key, val in keyvals}
+    
+    def getPerformanceTableData(self):
+        data = [['Time (sec)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
+        times = [tp.time for tp in self.command_performance.timepoints]
+        if times !=[]:
+            mintime = min(times)
+            if self.command_performance !=None:
+                for tp in self.command_performance.timepoints:
+                    toappend = []
+                    toappend.append(float((tp.time-mintime).total_seconds())/60)
+                    if tp.cpu_percent!= None: toappend.append(tp.cpu_percent)
+                    else: toappend.append(0)
+                    if tp.memory_percent != None: toappend.append(tp.memory_percent)
+                    else: toappend.append(0)
+                    if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000)
+                    else: toappend.append(0)
+                    if tp.read_bytes!=None: toappend.append(float(tp.read_bytes)/1000000)
+                    else: toappend.append(0)
+                    if tp.write_bytes!=None: toappend.append(float(tp.write_bytes)/1000000)
+                    else: toappend.append(0)
+                    data.append(toappend)
+        else: data.append([0,0,0,0,0,0])
+        return data
+                
+#     tp.cpu_percent
+#     tp.memory_percent = Column(Float)
+#     tp.rss = Column(Float)
+#     vms = Column(Float)
+#     read_bytes = Column(Float)
+#     write_bytes = Column(Float)
+#     time = Column(DateTime)
+            
+#         ['1',  100,      1, 10, 1],
+#         ['2',  15,      34, 10, 1],
+#         ['3',  50,       55, 10, 1],
+#         ['4',  5,      40, 10, 1]]
+    
     def updateServer(self, worker = None):
         '''
         Updates the server with command performance data.

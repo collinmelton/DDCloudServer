@@ -3,24 +3,24 @@
 
 {% block body %}
 
-
+<script src="https://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script>
+    google.load("visualization", "1.1", {packages:["table", "corechart"]});
+    // google.charts.load('current', {'packages':['corechart']});
+</script>
 <script src="/static/assets/customjs/custom.js"></script>
 
 <script>
 
 $(document).ready(function(){
     // this code sets the write view on startup
-    toggleView("workflows_section");
-    $(".nav li").on("click", function() {
-        $(".nav li").removeClass("active");
-        $(this).addClass("active");
-    });
-    getUserData(updatePageElements, "launcher");
+    getUserData(updatePageElements, "dashboard");
 });
 
 </script>
 
-<title>Workflow Editor</title>
+<title>Dashboard</title>
 
 
 
@@ -39,7 +39,43 @@ $(document).ready(function(){
     <div class="container-fluid">
         <div class="row">
             <div class="main">
-                <h1 class="page-header">Home of Future Dashboard</h1>
+                <h1 class="page-header">Dashboard</h1>
+                <div id="workflow_selector">
+                    <div class="form-group">
+                        <label for="dashboardWorkflowSelect">Select a Workflow</label>
+                        <select class="form-control", id="dashboardWorkflowSelect" name="dashboardWorkflowSelect" onchange='updateDashboardWorkflowsSelectWithoutInit()')>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dashboardWorkflowNameSelect">Select the Name of Your Workflow Run</label>
+                        <select class="form-control", id="dashboardWorkflowNameSelect" name="dashboardWorkflowNameSelect">
+                        </select>
+                    </div>
+                </div>
+                <!-- <div class="row">
+                    <div id="instances_table" class="col-md-3"></div>
+                    <div id="commands_table" class="col-md-3"></div>
+                </div> -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Instances</h3>
+                        <div id="instances_table"></div>    
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Commands</h3>
+                        <div id="commands_table"></div>    
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Command Performance</h3>
+                        <div id="command_chart"></div>    
+                    </div>
+                </div>
+               
+               
             </div>
         </div>
     </div>

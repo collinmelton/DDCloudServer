@@ -92,7 +92,54 @@ class User(orm.Base):
                 "images": imageData,
                 "credentials": credentialData,
                 "active_workflows":self.getActiveWorkflows()}
+    
+    # returns workflow template data for dashboard
+    def getWorkflowsDashboardData(self):
+        print "getting dashboard data"
+        result = {str(wft.id): {"id": str(wft.id), "name": wft.name, "names": [str(wf.id)+": "+wf.name for wf in wft.workflows]} 
+                for wft in self.workflowtemplates}
+        return result
+    
+    def getWorkflowInstancesData(self, workflow_id):
+        wf = [w for w in self.workflows if str(w.id)==str(workflow_id)]
+        result = {}
+        if wf !=[]: 
+            wf = wf[0]
+            result["colnames"] = Instance.getTableNames()
+            result["rows"] = [inst.getTableData() for inst in wf.instances]
+            result["numrows"] = len(result["rows"])
+        return result
+            
+    def getInstanceCommandData(self, workflow_id, instance_id):
+        from DDServerApp.ORM.Mappers import InstanceCommand
+        wf = [w for w in self.workflows if str(w.id)==str(workflow_id)]
+        result = {}
+        if wf !=[]: 
+            wf = wf[0]
+            inst = [i for i in wf.instances if str(i.id)==str(instance_id)]
+            if inst!=[]:
+                inst = inst[0]
+                result["colnames"] = InstanceCommand.getTableNames()
+                result["rows"] = [c.getTableData() for c in inst.commands]
+                result["numrows"] = len(result["rows"])
+        return result
+    
+    def getPerformanceData(self, workflow_id, instance_id, command_id):
+        from DDServerApp.ORM.Mappers import InstanceCommand
+        wf = [w for w in self.workflows if str(w.id)==str(workflow_id)]
+        result = []
+        if wf !=[]: 
+            wf = wf[0]
+            inst = [i for i in wf.instances if str(i.id)==str(instance_id)]
+            if inst!=[]:
+                inst = inst[0]
+                command = [c for c in inst.commands if str(c.id)==str(command_id)]
+                if command !=[]:
+                    command = command[0]
+                    result = command.getPerformanceTableData()
+        return result
         
+    
     def getActiveWorkflows(self):
         return {wft.id: wft.dictForJSON() for wft in self.workflowtemplates if any([wf.active for wf in wft.workflows])}
         

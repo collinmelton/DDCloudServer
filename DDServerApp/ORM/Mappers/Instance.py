@@ -107,6 +107,25 @@ class Instance(orm.Base):
     # client key and secret are unique to each instance, the access token and secret are unique
     # for each client, these 4 values ensure that a particular instance is getting access to the 
     # correct instance commands and sending back performance data associated with these commands 
+    
+    @staticmethod
+    def getTableNames():
+        return [("string", "name", "Name"), 
+        ("string", "status", "Status"),
+        ("boolean", "preemptible", "Preemptible"),
+        ("string", "machine_type", "Machine Type"),
+        ("string", "location", "Location")]
+    
+    def getTableData(self):
+        {"key1": {"value":"<a onclick='toggleCommand(\"1\");'>Command 1</a>", "css":""},
+                       "key2": {"value":"result 1", "css":""}}
+        keyvals = [("name", "<a onclick='toggleCommands(\""+str(self.workflows[0].id)+"\", \""+str(self.id)+"\");'>"+self.name+"</a>"), 
+                ("status", self.status),
+                ("preemptible", self.preemptible),
+                ("machine_type", self.machine_type),
+                ("location", self.location)]
+        return {key: {"value": val, "css":""} for key, val in keyvals}
+
     def _getClientAndAccessTokens(self, session):
         from Oauth import Client
         if VERBOSE: print self.client

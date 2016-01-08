@@ -518,6 +518,46 @@ def getUserData():
     return jsonify({"data": user.getUserData(),
             "message": "updated data"})
 
+@app.route("/api/_getdashboarddata", methods=['GET'])
+def getDashboardData():
+    user = getCurrentUser()
+    requestType = request.args["type"]
+    if requestType == "instances":
+        data = user.getWorkflowInstancesData(request.args["workflow_id"])
+#         data = {"colnames":[["string", "key1", "Key1"],
+#                         ["string", "key2", "Key2"]],
+#             "rows":  [{"key1": {"value":"<a onclick='toggleCommands(\"1\");'>Instance 1</a>", "css":""},
+#                        "key2": {"value":"1-2", "css":""}},
+#                       {"key1": {"value":"<a onclick='toggleCommands(\"2\");'>Instance 2</a>", "css":""},
+#                        "key2": {"value":"2-2", "css":""}}
+#                         ],
+#             "numrows":2}
+    elif requestType == "commands":
+        data = user.getInstanceCommandData(request.args["workflow_id"], request.args["instance_id"])
+#         data = {"colnames":[["string", "key1", "Name"],
+#                         ["string", "key2", "Result"]],
+#             "rows":  [{"key1": {"value":"<a onclick='toggleCommand(\"1\");'>Command 1</a>", "css":""},
+#                        "key2": {"value":"result 1", "css":""}},
+#                       {"key1": {"value":"<a onclick='toggleCommand(\"2\");'>Command 2</a>", "css":""},
+#                        "key2": {"value":"result 2", "css":""}}
+#                         ],
+#             "numrows":2}
+    elif requestType == "performance":
+        data = user.getPerformanceData(request.args["workflow_id"], request.args["instance_id"], request.args["command_id"])
+#         data = [['Time', 'CPU', 'Memory', 'Write', 'Read'],
+#         ['1',  100,      1, 10, 1],
+#         ['2',  15,      34, 10, 1],
+#         ['3',  50,       55, 10, 1],
+#         ['4',  5,      40, 10, 1]]
+    elif requestType == "workflows":
+        data = user.getWorkflowsDashboardData()
+#         data = {"1":{"id":"1", "name": "test1", "names":["1_name1", "1_name2"]}, 
+#                 "2":{"id":"2", "name": "test1", "names":["2_name1", "2_name2"]}}
+    else: data = ""
+    print data
+    return jsonify({"data": data,
+            "message": "hello!"})
+
 def workflowLauncher(user, data, stop):
     if stop:
         wfid = getID(request.form["activeWorkflowSelect"])
