@@ -651,7 +651,7 @@ def commands():
     else:
         client = request.oauth.client
         if VERBOSE: print "command update:", request.data
-        client.instance.updateCommandData(request.data, SESSION)
+        client.instance.updateCommandData(json.loads(request.data), SESSION)
         SESSION.add(client.instance)
         SESSION.commit()        
         return jsonify({"this":"worked!"})
