@@ -28,18 +28,19 @@ class GCEManager(GCENodeDriver):
         self.auth_account = auth_account
         super(GCEManager, self).__init__(user_id, key, datacenter=datacenter, project=project, auth_type=auth_type, **kwargs)
     
-    def _diskToDiskData(self, Disk):
+    def _diskToDiskData(self, disk):
+        gceDisk = disk.updateDisk()
         return {'kind': 'compute#attachedDisk',
                 'boot': False,
                 'type': 'PERSISTENT', #'pd-standard',
-                'mode': Disk.mode,
-                'deviceName': Disk.disk.name,
+                'mode': disk.mode,
+                'deviceName': gceDisk.name,
                 'autoDelete': False,
-                'zone': Disk.disk.extra['zone'].extra['selfLink'],
-                'source': Disk.disk.extra['selfLink']}
+                'zone': gceDisk.extra['zone'].extra['selfLink'],
+                'source': gceDisk.extra['selfLink']}
     
-    def _disksToDiskData(self, Disks):
-        return map(self._diskToDiskData, Disks)
+    def _disksToDiskData(self, disks):
+        return map(self._diskToDiskData, disks)
 
     def list_nodes(self, ex_zone=None, regex=""):
         """
