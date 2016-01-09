@@ -84,6 +84,8 @@ class User(orm.Base):
     def getUserData(self):
         workflowData = {wf.id: wf.dictForJSON() for wf in self.workflowtemplates}
         imageData = {im.id: im.dictForJSON() for im in self.images}
+        # add none data
+        imageData["0"] = {"id": "0", "name":"None", "authaccount": "", "installDirectory":""}
         if self.credentials != None:
             credentialData = {cred.id: cred.dictForJSON() for cred in self.credentials}
         else: 

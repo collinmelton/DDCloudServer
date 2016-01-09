@@ -311,6 +311,7 @@ def newWorkflow(user, data, new, delete):
 def saveImage(user, data, delete):
     imageID = getID(data["imageImagesSelect"])
     name = data["imageNameOnImageForm"]
+    if imageID == "0": return {"updates": {}, "message": "deleted image"}
     authAccount = data["authAccount"]
     rootdir = data["installDirectory"]
     if imageID == None:
@@ -352,8 +353,11 @@ def saveDisk(user, data, variables, delete):
         workflow = WorkflowTemplate.findByID(SESSION, getID(data["diskWorkflowsSelect"]), user)
         if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
         name = data["diskName"]
-        image = Image.findByID(SESSION, getID(data["diskImagesSelect"]), user)
-        if image == None: return {"updates": {}, "message": "user permissions error on image"}
+        if getID(data["diskImagesSelect"])=="0": 
+            image = None
+        else: 
+            image = Image.findByID(SESSION, getID(data["diskImagesSelect"]), user)
+            if image == None: return {"updates": {}, "message": "user permissions error on image"}
         diskSize = data["diskSize"]
         diskType = data["diskTypeSelector"]
         location = data["diskLocationSelector"]

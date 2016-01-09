@@ -25,7 +25,7 @@ class Disk(orm.Base):
     name = Column(String, index=True)
     location = Column(String)
     snapshot = Column(String)
-    image = Column(String)
+#     image = Column(String)
     created = Column(Boolean)
     destroyed = Column(Boolean)
     mode = Column(String)
@@ -136,7 +136,9 @@ class Disk(orm.Base):
     def create(self):
         self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created)+" None: "+str(self.disk==None))
         if self.destroyed or not self.created:
-            disk=self.trycommand(self.gce_manager.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=self.image.name, ex_disk_type=self.disk_type)
+            if self.image == None: imagename = None
+            else: imagename = self.image.name 
+            disk=self.trycommand(self.gce_manager.create_volume, self.size, self.name, location=self.location, snapshot=self.snapshot, image=imagename, ex_disk_type=self.disk_type)
             self.created=True
             self.destroyed=False
             self.printToLog("created disk on GCE")

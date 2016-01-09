@@ -226,11 +226,20 @@ class Instance(orm.Base):
         newCommands = {}
         # make commands
         for id in self.command_dict:
-            newCommands[id] = InstanceCommand(self, self.command_dict[id]["command"], [], "main")
+            newCommands[id] = []
+            for line in self.command_dict[id]["command"].split("\n"):
+                if line!="": newCommands[id].append(InstanceCommand(self, line, [], "main"))
         # set dependencies
         for id in newCommands:
-            newCommands[id].dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
-        return newCommands.values()
+            for newCommand in newCommands[id]:
+                deps = startupCommands
+                for did in self.command_dict[id]["dependencies"]: deps += newCommands[did]
+#                 newCommand.dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
+                newCommand.dependencies = deps
+        result = []
+        for commandList in newCommands.values():
+            result += commandList
+        return result
 
 
     def buildNodeParams(self, machine_type, image_name, location, network, tags, metadata):
