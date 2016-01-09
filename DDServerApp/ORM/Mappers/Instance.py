@@ -472,15 +472,15 @@ class Instance(orm.Base):
                 if VERBOSE: print self.node_params["ex_network"], self.node_params["ex_tags"], self.node_params["ex_metadata"]
                 if VERBOSE: print boot_disk
                 if VERBOSE: print additionalDisks, self.preemptible, self.numLocalSSD, self.log
-#                 self.gce_manager.create_node(self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
-#                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
-#                                       ex_boot_disk=boot_disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
-#                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
-#                 
-                node=self.trycommand(self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
+                self.gce_manager.create_node(self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
                                       ex_boot_disk=boot_disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
+                 
+#                 node=self.trycommand(self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], location=self.node_params["location"],
+#                                       ex_network=self.node_params["ex_network"], ex_tags=self.node_params["ex_tags"], ex_metadata=self.node_params["ex_metadata"], 
+#                                       ex_boot_disk=boot_disk, serviceAccountScopes=["https://www.googleapis.com/auth/compute", "https://www.googleapis.com/auth/devstorage.read_write"], 
+#                                       additionalDisks=additionalDisks, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, log=self.log)
                 if node==None:
                     node=self.trycommand(self.gce_manager.ex_get_node, self.name)
                 if i==2:
