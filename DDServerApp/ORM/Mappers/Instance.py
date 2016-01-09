@@ -464,6 +464,9 @@ class Instance(orm.Base):
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
             additionalDisks=self.read_disks+self.read_write_disks
+            if VERBOSE: print additionalDisks
+            additionalDisks = list(set(additionalDisks))
+            if VERBOSE: print additionalDisks
             
             # create node = GCE instance
             i=0
