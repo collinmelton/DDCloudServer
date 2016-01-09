@@ -134,7 +134,7 @@ class Disk(orm.Base):
 
     # method to create disk on GCE
     def create(self):
-        self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created)+" None: "+str(self.disk==None))
+        self.printToLog("trying to create disk... destroyed: "+str(self.destroyed)+" created: "+str(self.created))#+" None: "+str(self.disk==None))
         if self.destroyed or not self.created:
             if self.image == None: imagename = None
             else: imagename = self.image.name 
