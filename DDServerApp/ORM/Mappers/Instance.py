@@ -430,18 +430,20 @@ class Instance(orm.Base):
 #             return 
             #raise Exception('Trying to create already created instance on '+self.name)
             # make sure all necessary disks are created
-            read_disks = []
+#             read_disks = []
             for disk in self.read_disks:
                 if not disk.created:
-                    read_disks.append(disk.create())
-                else:
-                    read_disks.append(disk.updateDisk())
-            read_write_disks = []
+                    disk.create()
+#                     read_disks.append(disk.create())
+#                 else:
+#                     read_disks.append(disk.updateDisk())
+#             read_write_disks = []
             for disk in self.read_write_disks:
                 if not disk.created:
-                    read_write_disks.append(disk.create())
-                else:
-                    read_write_disks.append(disk.updateDisk())
+                    disk.create()
+#                     read_write_disks.append(disk.create())
+#                 else:
+#                     read_write_disks.append(disk.updateDisk())
             
             # if boot disk exists delete and make new
             if self.boot_disk.updateDisk() != None:
@@ -461,7 +463,7 @@ class Instance(orm.Base):
                 disk.mode="READ_ONLY"
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
-            additionalDisks=read_disks+read_write_disks
+            additionalDisks=self.read_disks+self.read_write_disks
             
             # create node = GCE instance
             i=0
