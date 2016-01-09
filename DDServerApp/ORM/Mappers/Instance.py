@@ -470,7 +470,7 @@ class Instance(orm.Base):
             node = None
             while node==None:
                 i+=1
-                if VERBOSE: print self.gce_manager.create_node, self.name, self.node_params["size"], self.node_params["image"], self.node_params["location"]
+                if VERBOSE: print self.name, self.node_params["size"], self.node_params["image"], self.node_params["location"]
                 if VERBOSE: print self.node_params["ex_network"], self.node_params["ex_tags"], self.node_params["ex_metadata"]
                 if VERBOSE: print boot_disk
                 if VERBOSE: print additionalDisks, self.preemptible, self.numLocalSSD, self.log
