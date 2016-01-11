@@ -122,11 +122,11 @@ class InstanceCommand(orm.Base):
         self.process_id = 0
         if id != None: self.id = id
 
-    def __str__(self):
-        return "< Instance Command: "+self.command[:min(30, len(self.command))]+">"
-    
-    def __repr__(self):
-        return str(self)
+#     def __str__(self):
+#         return "< Instance Command: "+self.command[:min(30, len(self.command.replace("\n", "")))]+">"
+#     
+#     def __repr__(self):
+#         return str(self)
     
     @staticmethod
     def getTableNames():

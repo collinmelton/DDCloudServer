@@ -474,6 +474,7 @@ class InstanceTemplate(orm.Base):
                      read_disks, read_write_disks, boot_disk, command_dict, 
                      rootdir=self.boot_disk.image.rootdir, preemptible=True, numLocalSSD=0, 
                      localSSDInitSources="", localSSDDests="", gce_manager=gce_manager, log = log)
+            
         return result            
         
     @staticmethod

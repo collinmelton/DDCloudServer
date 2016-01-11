@@ -222,20 +222,33 @@ class Instance(orm.Base):
         return new_commands 
 
     def parseCommandDict(self, startupCommands=[]):
+        print "PARSING COMMAND DICTIONARY!!!"
         from InstanceCommand import InstanceCommand
         newCommands = {}
         # make commands
+        print self.command_dict
         for id in self.command_dict:
             newCommands[id] = []
+            deps = startupCommands # the first command in all command sequences get startup commands as dependencies
             for line in self.command_dict[id]["command"].split("\n"):
-                if line!="": newCommands[id].append(InstanceCommand(self, line, [], "main"))
+                if line!="": 
+                    newCommand = InstanceCommand(self, line, deps, "main")
+                    newCommands[id].append(newCommand)
+                    deps = [newCommand]
+        print newCommands.keys()
+        for key in newCommands.keys():
+            print "KEY:", key, newCommands[key] 
+#         print newCommands.values()
         # set dependencies
         for id in newCommands:
+            deps = []
+#             deps = startupCommands
             for newCommand in newCommands[id]:
-                deps = startupCommands
-                for did in self.command_dict[id]["dependencies"]: deps += newCommands[did]
+                for did in self.command_dict[id]["dependencies"]: 
+                    deps += newCommands[did]
+                    print newCommand, "adding command deps", newCommands[did]
 #                 newCommand.dependencies = [newCommands[did] for did in self.command_dict[id]["dependencies"]]+startupCommands
-                newCommand.dependencies = deps
+                newCommand.command_dependencies = list(set(newCommand.command_dependencies+deps))
         result = []
         for commandList in newCommands.values():
             result += commandList
@@ -344,6 +357,13 @@ class Instance(orm.Base):
 
     # check if instance is ready and if yes start job
     def startIfReady(self, session):
+        session.add(self)
+        session.commit()
+        for command in self.commands:
+            print command.id, command.command_type, [c.id for c in command.command_dependencies]
+
+        return False
+        
         # make sure if created it is either failed or completed or an active instance
         if self.created and not self.failed and self.status !="completed":
             node = self.updateNode()
@@ -358,7 +378,7 @@ class Instance(orm.Base):
                 session.commit()
                 print "command status", [c.finished for c in self.commands]
         
-        self.printToLog("starting if ready instance "+self.name)
+                self.printToLog("starting if ready instance "+self.name)
         # if already run do nothing
         if self.status=="completed": 
             print "status is", self.status
