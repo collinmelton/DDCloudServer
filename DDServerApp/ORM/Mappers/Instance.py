@@ -207,7 +207,7 @@ class Instance(orm.Base):
     
     # code to run (on actual instance after boot) to set the active gcloud account
     def _setActiveGcloudAuthAccount(self):
-        return "gcloud config set account "+self.image.authAccount    
+        return "/usr/local/bin/gcloud config set account "+self.image.authAccount    
     
     def addCommandSequence(self, command_list, command_type, command_dependencies = [], session=None):
         from InstanceCommand import InstanceCommand
@@ -429,7 +429,7 @@ class Instance(orm.Base):
     def packageScript(self, session):          
         clientKey, clientSecret, tokenKey, tokenSecret = self._getClientAndAccessTokens(session)
         address = self.workflows[0].address
-        result = "\n/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address
+        result = "\n/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address + " > startupScriptOutput.txt"
         if VERBOSE: print result
         return result
 # /DDServerApp/Utilities/Worker.py
