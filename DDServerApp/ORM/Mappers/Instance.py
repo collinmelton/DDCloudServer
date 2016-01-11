@@ -176,7 +176,7 @@ class Instance(orm.Base):
     # code to run (on actual instance after boot) to save disk content 
     def _save_disk_content(self):
         # save disk content
-        result="\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/writeDiskContentFile.py"), self.read_write_disks))
+        result="\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/writeDiskContentFile.py"), self.read_write_disks))
         # save disk files to other location (e.g. cloud storage)
         result += "\n".join([d.shutdown_save_script() for d in self.read_write_disks])
         for i in range(min(self.numLocalSSD, len(self.localSSDDests))):
@@ -194,7 +194,7 @@ class Instance(orm.Base):
         read_only=map(lambda disk: disk.mount_script(False), self.read_disks)
         read_write=map(lambda disk: disk.mount_script(True), self.read_write_disks)
         local_ssd=self._mount_local_ssd()
-        read_write_disk_restore = map(lambda disk: disk.contentRestore("/usr/local/bin/python2.7 "+self.rootdir+"DynamicDiskCloudSoftware/Worker/restoreDiskContent.py"), self.read_write_disks)
+        read_write_disk_restore = map(lambda disk: disk.contentRestore("/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/restoreDiskContent.py"), self.read_write_disks)
         result= "\n".join(read_only+read_write+local_ssd+read_write_disk_restore)
         return result
     
