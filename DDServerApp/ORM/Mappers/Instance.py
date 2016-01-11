@@ -357,12 +357,12 @@ class Instance(orm.Base):
 
     # check if instance is ready and if yes start job
     def startIfReady(self, session):
-        session.add(self)
-        session.commit()
-        for command in self.commands:
-            print command.id, command.command_type, [c.id for c in command.command_dependencies]
-
-        return False
+#         session.add(self)
+#         session.commit()
+#         for command in self.commands:
+#             print command.id, command.command_type, [c.id for c in command.command_dependencies]
+# 
+#         return False
         
         # make sure if created it is either failed or completed or an active instance
         if self.created and not self.failed and self.status !="completed":
