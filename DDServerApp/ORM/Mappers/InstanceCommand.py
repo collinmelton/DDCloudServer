@@ -219,12 +219,17 @@ class InstanceCommand(orm.Base):
         perf_thread = CheckPerformanceThread(self, worker = worker)
         perf_thread.start()
         # wait for process to finish
-        running_subprocess.wait()
-        self.result = running_subprocess.stdout.read()
+        self.result, error = running_subprocess.communicate()
+#         f = open(running_subprocess.stdout, 'r')
+#         self.result = f.read()
+#         f.close()
         if VERBOSE: 
             print "COMMAND:", self.command
             print "RESULT:", self.result
-        error = running_subprocess.stderr.read()
+            print "ERROR:", error
+#         f = open(running_subprocess.stderr, 'r')
+#         error = f.read()
+#         f.close()
         return_code = running_subprocess.returncode
         # stop the performance thread
         perf_thread.stop()
@@ -232,7 +237,7 @@ class InstanceCommand(orm.Base):
         # handle errors
         if return_code != 0:
             self.failed = True
-            self.result = "\n".join(map(str, [error, self.result]))
+            self.result = "\n".join(map(str, [self.result, error]))
             # make sure failure isn't a false alarm
             notfailed=False
             for item in NOT_ACTUALLY_FAILED_LIST:
