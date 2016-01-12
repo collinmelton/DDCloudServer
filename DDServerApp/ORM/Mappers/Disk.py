@@ -153,7 +153,7 @@ class Disk(orm.Base):
         self.printToLog("updating disk "+self.name)
         if (self.created): # and ("disk" not in self.__dict__ or self.disk ==None): 
             disk=self.trycommand(self.gce_manager.ex_get_volume, self.name)
-            if disk==None: "disk is None", self.name, self.gce_manager.list_volumes()
+            if disk==None: print "disk is None", self.name, self.gce_manager.list_volumes()
             if VERBOSE: print "updated disk", disk
         else: disk = None
         self.disk = disk
