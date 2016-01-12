@@ -528,39 +528,47 @@ def getDashboardData():
     requestType = request.args["type"]
     if requestType == "instances":
         data = user.getWorkflowInstancesData(request.args["workflow_id"])
-#         data = {"colnames":[["string", "key1", "Key1"],
-#                         ["string", "key2", "Key2"]],
-#             "rows":  [{"key1": {"value":"<a onclick='toggleCommands(\"1\");'>Instance 1</a>", "css":""},
-#                        "key2": {"value":"1-2", "css":""}},
-#                       {"key1": {"value":"<a onclick='toggleCommands(\"2\");'>Instance 2</a>", "css":""},
-#                        "key2": {"value":"2-2", "css":""}}
-#                         ],
-#             "numrows":2}
     elif requestType == "commands":
         data = user.getInstanceCommandData(request.args["workflow_id"], request.args["instance_id"])
-#         data = {"colnames":[["string", "key1", "Name"],
-#                         ["string", "key2", "Result"]],
-#             "rows":  [{"key1": {"value":"<a onclick='toggleCommand(\"1\");'>Command 1</a>", "css":""},
-#                        "key2": {"value":"result 1", "css":""}},
-#                       {"key1": {"value":"<a onclick='toggleCommand(\"2\");'>Command 2</a>", "css":""},
-#                        "key2": {"value":"result 2", "css":""}}
-#                         ],
-#             "numrows":2}
     elif requestType == "performance":
         data = user.getPerformanceData(request.args["workflow_id"], request.args["instance_id"], request.args["command_id"])
-#         data = [['Time', 'CPU', 'Memory', 'Write', 'Read'],
-#         ['1',  100,      1, 10, 1],
-#         ['2',  15,      34, 10, 1],
-#         ['3',  50,       55, 10, 1],
-#         ['4',  5,      40, 10, 1]]
     elif requestType == "workflows":
         data = user.getWorkflowsDashboardData()
-#         data = {"1":{"id":"1", "name": "test1", "names":["1_name1", "1_name2"]}, 
-#                 "2":{"id":"2", "name": "test1", "names":["2_name1", "2_name2"]}}
     else: data = ""
-    print data
+#     print data
     return jsonify({"data": data,
             "message": "hello!"})
+
+# from threading import Thread, Event
+#  
+# class LaunchWorkflowThread(Thread):
+#     '''
+#     This class will run a parallel thread to launch the workflow and monitor its status.
+#     '''
+#     
+#     def __init__(self, workflow, logfilename, address, session):
+#         Thread.__init__(self)
+#         self.workflow = workflow
+#         self._stop = Event()
+#         self.checking_interval = 60
+#         self.logfilename = logfilename
+#         self.address = address
+#         self.session = session
+# 
+#     def stop(self):
+#         self._stop.set()
+# 
+#     def stopped(self):
+#         return self._stop.isSet()
+#         
+#     def run(self):
+#         self.workflow.startWorkflow(self.session, self.logfilename, self.address)
+#         while not self.stopped():
+#             # check for restart
+#             self.workflow.checkForRestart() 
+#             # wait
+#             time.sleep(self.checking_interval)
+# better to use celery?!    
 
 def workflowLauncher(user, data, stop):
     if stop:
@@ -585,21 +593,6 @@ def workflowLauncher(user, data, stop):
         wf.stopWorkflow(SESSION)
     return {"updates": {"active_workflows": user.getActiveWorkflows()},  
             "message": "started workflow"}
-
-# def workflowLauncher(user, data, stop):
-#     wft = WorkflowTemplate.findByID(SESSION, getID(data["launcherWorkflowSelect"]), user)
-#     if wft == None: return {"updates": {}, "message": "user permissions error on workflow template"}
-#     if wft.workflows == []:
-#         logfilename = os.path.join(ensureDirectoryExists(os.path.join(app.config["LOGFILEDIRECTORY"], user.name)), getTimeStampedFile(wft.name)) 
-#         wf = Workflow(wft.name, wft, user, logfilename)
-#     else:
-#         wf = wft.workflows[0]
-#     if wf.active: 
-#         return {"updates": {}, "message": "workflow is already active"}
-#     else: 
-#         wf.start()
-#         return {"updates": {}, "message": "workflow has been started!"}
-    
     
 @app.route("/api/_workflows", methods=['POST'])
 def workflowEditor():
@@ -610,6 +603,7 @@ def workflowEditor():
     edittype = request.form["editType"]
     result = {"message":"test message", "updates":"test updates"}
     formData = request.form
+    formData = {key.strip():value.strip() for key, value in formData.items()}
     if VERBOSE: print updatetype
     if updatetype=="workflow":
         result = newWorkflow(user, formData, edittype=="new", edittype=="delete")
@@ -625,7 +619,7 @@ def workflowEditor():
         result = saveCredentials(user, formData, request.files, edittype=="delete")
     elif updatetype=="launchworkflow":
         result = workflowLauncher(user, formData, edittype=="stop")
-    if VERBOSE: print result
+#     if VERBOSE: print result
     return jsonify(result)
 
 @app.route('/oauth/access_token')
