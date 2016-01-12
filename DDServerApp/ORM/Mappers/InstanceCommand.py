@@ -157,7 +157,7 @@ class InstanceCommand(orm.Base):
                     for tp in self.command_performance.timepoints:
                         toappend = []
                         toappend.append(float((tp.time-mintime).total_seconds())/60)
-                        if tp.cpu_percent!= None: toappend.append(tp.cpu_percent*100)
+                        if tp.cpu_percent!= None: toappend.append(tp.cpu_percent)
                         else: toappend.append(0)
                         if tp.memory_percent != None: toappend.append(tp.memory_percent)
                         else: toappend.append(0)
