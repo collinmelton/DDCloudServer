@@ -148,9 +148,12 @@ class InstanceCommand(orm.Base):
         data = [['Time (min)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
         if self.command_performance!=None:
             times = [tp.time for tp in self.command_performance.timepoints]
+            
             if times !=[]:
                 mintime = min(times)
+                mintp = next([tp for tp in self.command_performance.timepoints if tp.time == mintime])
                 if self.command_performance !=None:
+                    lasttp = mintp
                     for tp in self.command_performance.timepoints:
                         toappend = []
                         toappend.append(float((tp.time-mintime).total_seconds())/60)
@@ -160,11 +163,15 @@ class InstanceCommand(orm.Base):
                         else: toappend.append(0)
                         if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000000)
                         else: toappend.append(0)
-                        if tp.read_bytes!=None: toappend.append(float(tp.read_bytes)/1000000)
+                        if tp.read_bytes!=None and lasttp.read_bytes!=None: 
+                            toappend.append(float(tp.read_bytes-lasttp.read_bytes)/(tp.time-lasttp.time)/1000000)
                         else: toappend.append(0)
-                        if tp.write_bytes!=None: toappend.append(float(tp.write_bytes)/1000000)
+                        if tp.write_bytes!=None: 
+                            toappend.append(float(tp.write_bytes-lasttp.write_bytes)/(tp.time-lasttp.time)/1000000)
                         else: toappend.append(0)
                         data.append(toappend)
+                        lasttp = tp
+                
         else: data.append([0,0,0,0,0,0])
         return data
                 
