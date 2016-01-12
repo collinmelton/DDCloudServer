@@ -172,11 +172,10 @@ class Disk(orm.Base):
     def destroyifnotneeded(self, instances):
         if instances!=None:
             # for each instance look to see if the disk is needed, if it is needed and the instance is not complete don't destroy (ie return)
-            for instance_name in instances:
-                inst = instances[instance_name]
+            for inst in instances:
                 disk_names=map(lambda x: x.name, inst.read_disks+inst.read_write_disks)
                 if self.name in disk_names:
-                    if instances[instance_name].status!="complete":
+                    if inst.status!="complete":
                         return
             if VERBOSE: print "should destroy "+self.name
             self.destroy()
