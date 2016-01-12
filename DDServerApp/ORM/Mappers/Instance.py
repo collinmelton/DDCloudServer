@@ -231,6 +231,7 @@ class Instance(orm.Base):
             newCommands[id] = []
             deps = startupCommands # the first command in all command sequences get startup commands as dependencies
             for line in self.command_dict[id]["command"].split("\n"):
+                line = line.strip()
                 if line!="": 
                     newCommand = InstanceCommand(self, line, deps, "main")
                     newCommands[id].append(newCommand)
