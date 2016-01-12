@@ -151,7 +151,7 @@ class InstanceCommand(orm.Base):
             
             if times !=[]:
                 mintime = min(times)
-                mintp = next([tp for tp in self.command_performance.timepoints if tp.time == mintime])
+                mintp = next(tp for tp in self.command_performance.timepoints if tp.time == mintime)
                 if self.command_performance !=None:
                     lasttp = mintp
                     for tp in self.command_performance.timepoints:
