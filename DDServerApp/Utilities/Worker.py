@@ -5,7 +5,7 @@ Created on Dec 3, 2015
 '''
 
 
-import sys, os, inspect, thread
+import sys, os, inspect, thread, time
 
 path = inspect.getfile(inspect.currentframe()).split("DDServerApp")[0]
 print path
@@ -46,25 +46,37 @@ class Communicator(object):
                signature_type = 'auth_header')
         # get request session
         self.client = requests.session()
+        self.sleeptime=10
+        self.retries = 5
         
     def post(self, url, body, headers = None):
         '''
         Takes in body and header and returns response in json format.
         '''
-        if VERBOSE: print "body:", body
-        if headers == None:
-            response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder))
-        else:
-            response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder), headers=headers)
-        return json.loads(response.content)
+        counter = 0
+        while counter<self.retries:
+            if VERBOSE: print "body:", body
+            if headers == None:
+                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder))
+            else:
+                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder), headers=headers)
+            try: return json.loads(response._content)
+            except: counter+=1
+            time.sleep(self.sleeptime)
+        return {}
+        
     
     def get(self, url):
         '''
         Takes in body and header and returns response in json format.
         '''
-        response = self.client.get(url, auth=self.oauth)
-        return response
-        return json.loads(response.content)
+        counter = 0
+        while counter<self.retries:
+            response = self.client.get(url, auth=self.oauth)
+            try: return json.loads(response._content)
+            except: counter+=1
+            time.sleep(self.sleeptime)
+        return {}
 
 class Worker(object):
     '''
@@ -90,18 +102,6 @@ class Worker(object):
         '''
         return Communicator(self.client_key, self.client_secret, self.token_key, self.token_secret)
     
-#     def _sendData(self, data, data_type):
-#         '''
-#         This method sends data to the master instance.
-#         '''
-#         pass
-#     
-#     def _getData(self, data_type):
-#         '''
-#         This method gets data from the master instance.
-#         '''
-#         pass
-    
     def updateCommandData(self, data):
         self.lock.acquire()
         print "posting data"
@@ -115,9 +115,9 @@ class Worker(object):
         This method communicates with the master node and gets all commands to run.
         '''
         print self.base_address+"/api/commands"
-        commandString = self.communicator.get(self.base_address.strip("/")+"/api/commands")._content
-        print "commands from server:", commandString
-        self.commands = InstanceCommand.generateCommandsFromJSON(commandString)
+        commandData = self.communicator.get(self.base_address.strip("/")+"/api/commands")
+        print "commands from server:", commandData
+        self.commands = InstanceCommand.generateCommandsFromDataDict(commandData)
         return self.commands 
     
     def run(self):
