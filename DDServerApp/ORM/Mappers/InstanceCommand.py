@@ -16,8 +16,8 @@ from threading import Thread, Event
 # some global vars
 # certain text output for GATK can indicate that the command didn't actually fail even with non zero exit status 
 NOT_ACTUALLY_FAILED_LIST=["org.broadinstitute.sting.gatk.CommandLineExecutable.generateGATKRunReport", "org.broadinstitute.gatk.engine.CommandLineExecutable.generateGATKRunReport"]
-PERFORMANCE_INTERVAL = 1 # gap between performance checks in secs
-UPDATE_SERVER_INTERVAL = int(math.floor(float(max([2, PERFORMANCE_INTERVAL]))/PERFORMANCE_INTERVAL)*PERFORMANCE_INTERVAL) # gap between updating server
+PERFORMANCE_INTERVAL = 5 # gap between performance checks in secs
+UPDATE_SERVER_INTERVAL = 2*int(math.floor(float(max([2, PERFORMANCE_INTERVAL]))/PERFORMANCE_INTERVAL)*PERFORMANCE_INTERVAL) # gap between updating server
 VERBOSE = True
 #### Some Helper Functions ####
 
@@ -383,13 +383,13 @@ class InstanceCommand(orm.Base):
 #         return {command.id: command.toSummary() for command in commands}
     
     @staticmethod
-    def generateCommandsFromJSON(json_string):
+    def generateCommandsFromDataDict(data):
         '''
         This method will generate a list of the commands 
         given a json object with command info.
         '''
-        if VERBOSE: print json_string
-        data = json.loads(json_string)
+        if VERBOSE: print data #json_string
+        # data = json.loads(json_string)
         commands = {int(key): {"command": InstanceCommand.generateCommandFromDict(data[key]), 
                           "dependencies": data[key]["command_dependencies"]} for key in data}
         for key in commands:
