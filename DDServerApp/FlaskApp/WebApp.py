@@ -603,7 +603,7 @@ def workflowEditor():
     edittype = request.form["editType"]
     result = {"message":"test message", "updates":"test updates"}
     formData = request.form
-    formData = {key.strip():value.strip() for key, value in formData.items()}
+#     formData = {key.strip():value.strip() for key, value in formData.items()}
     if VERBOSE: print updatetype
     if updatetype=="workflow":
         result = newWorkflow(user, formData, edittype=="new", edittype=="delete")
