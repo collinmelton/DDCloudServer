@@ -145,7 +145,7 @@ class InstanceCommand(orm.Base):
         return {key: {"value": val, "css":""} for key, val in keyvals}
     
     def getPerformanceTableData(self):
-        data = [['Time (min)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Write (MB/s)', 'Read (MB/s)']]
+        data = [['Time (min)', 'CPU %', 'Memory %', 'Memory (1GB)', 'Read (MB/s)', 'Write (MB/s)']]
         if self.command_performance!=None:
             times = [tp.time for tp in self.command_performance.timepoints]
             
@@ -163,11 +163,11 @@ class InstanceCommand(orm.Base):
                         else: toappend.append(0)
                         if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000000)
                         else: toappend.append(0)
-                        print "read_bytes", tp.read_bytes, lasttp.read_bytes, float(tp.read_bytes-lasttp.read_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000
                         if tp.read_bytes!=None and lasttp.read_bytes!=None: 
                             toappend.append(float(tp.read_bytes-lasttp.read_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000)
                         else: toappend.append(0)
-                        if tp.write_bytes!=None: 
+                        print "write bytes", tp.write_bytes, lasttp.write_bytes, float(tp.write_bytes-lasttp.write_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000
+                        if tp.write_bytes!=None and lasttp.write_bytes!=None: 
                             toappend.append(float(tp.write_bytes-lasttp.write_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000)
                         else: toappend.append(0)
                         data.append(toappend)
