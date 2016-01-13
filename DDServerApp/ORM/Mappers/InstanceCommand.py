@@ -163,7 +163,7 @@ class InstanceCommand(orm.Base):
                         else: toappend.append(0)
                         if float(tp.rss)!=None: toappend.append(float(tp.rss)/1000000000)
                         else: toappend.append(0)
-                        print "read_bytes", tp.read_bytes, lasttp.read_bytes
+                        print "read_bytes", tp.read_bytes, lasttp.read_bytes, float(tp.read_bytes-lasttp.read_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000
                         if tp.read_bytes!=None and lasttp.read_bytes!=None: 
                             toappend.append(float(tp.read_bytes-lasttp.read_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000)
                         else: toappend.append(0)
