@@ -219,6 +219,13 @@ class Workflow(orm.Base):
         for disk in self.disks:
             if disk.created and not disk.destroyed: disk.destroy()
     
+    def checkIfFinished(self):
+        for instance in self.instances:
+            if not instance.failed and not instance.status=="completed":
+                return False
+        self.active = False
+        return True
+    
 #     # adds myDriver, instance, and log to instance
 #     def reinit(self, myDriver, log):
 #         self.myDriver = myDriver

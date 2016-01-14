@@ -143,6 +143,9 @@ class Worker(object):
     def finish(self):
         self.communicator.get(self.base_address.strip("/")+"/api/finish")
         
+    def preempted(self):
+        self.communicator.get(self.base_address.strip("/")+"/api/preempted")
+        
 from optparse import OptionParser
 
 # this functions gets the command line options for running the program
@@ -153,6 +156,7 @@ def getOptions():
     parser.add_option("--CK", dest = "clientKey", help = "", metavar = "STRING", type = "string")
     parser.add_option("--CS", dest = "clientSecret", help = "", metavar = "STRING", type = "string")
     parser.add_option("--AD", dest = "address", help = "", metavar = "STRING", type = "string")
+    parser.add_option("--PR", dest = "preempted", help = "", metavar = "STRING", type = "string", default = "F")
     (options, args) = parser.parse_args()
     return options    
     
@@ -160,8 +164,11 @@ if __name__ == "__main__":
 
     options = getOptions()
     w = Worker(options.tokenKey, options.tokenSecret, options.clientKey, options.clientSecret, options.address)
-    w.run()
-    w.finish()
+    if options.preempted == "T":
+        w.preempted()
+    else:
+        w.run()
+        w.finish()
 #     token_key = 'TWuEjpsLpabBe6ImkdG37PbtX'
 #     token_secret = '7GslLWSHTa0jblFCl9hk33oiJ'
 #     client_props = {'client_secret': u's8rPirVz7uLF0vNmwHCKMCzxL', 'client_key': u'hdqLvlmpcWOsnHPQHGyRG9V5O'}

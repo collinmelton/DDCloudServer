@@ -321,24 +321,21 @@ class Instance(orm.Base):
         self.printToLog("updated command data")
 
     # restarting instance by destroying and recreating
-    def manual_restart(self):
+    def manual_restart(self, session):
         self.printToLog("performing manual restart")
         self.destroy(instances=None, destroydisks=False, force = False)
         for node in self.gce_manager.list_nodes():
             self.printToLog(str(node.__dict__)) 
-        self.create(restart=True)
+        self.create(session, restart=True)
     
     # in theory try to reboot node without destroying but so far that isn't working 
     # so for now just destroy node then create again
-    def restart(self):
+    def restart(self, session):
         self.updateNode()
         result = None
-#         reboot doesn't seem to work so commenting out
-#         if self.node != None:
-#             result = self.trycommand(self.gce_manager.reboot_node, self.node)
         if result == None:
-            self.manual_restart()
-        self.printToLog("created instance on GCE")
+            self.manual_restart(session)
+        self.printToLog("recreated instance on GCE")
         self.created=True
         self.failed=False
         self.destroyed=False
@@ -409,6 +406,11 @@ class Instance(orm.Base):
             for instance in self.next_instances:
                 print "checking if ready", instance.name
                 result[instance.name]=instance.startIfReady(session)
+            for disk in self.read_disks:
+                disk.destroyifnotneeded(self.workflows[0].instances)
+            for disk in self.read_write_disks:
+                disk.destroyifnotneeded(self.workflows[0].instances)
+            self.workflows[0].checkIfFinished()
         session.add(self)
         session.commit()
         print "finishing result", result
@@ -477,6 +479,7 @@ class Instance(orm.Base):
                 if VERBOSE: print "before", self.node_params["ex_metadata"]["items"]
                 if VERBOSE: print "adding", {"key":"startup-script", "value":self.packageScript(session)}
                 self.node_params["ex_metadata"]["items"].append({"key":"startup-script", "value":self.packageScript(session)})
+                self.node_params["ex_metadata"]["items"].append({"key":"shutdown-script", "value":self.packageShutdownScript(session)})
                 if VERBOSE: print "after", self.node_params["ex_metadata"]["items"]
 
             # change mode of disks and prepare them in a list for node creation
@@ -556,7 +559,27 @@ class Instance(orm.Base):
             self.printToLog("mistakenly trying to destroy "+self.name+", destroyed "+str(self.destroyed)+" self.node "+str(self.node==None))
             self.destroyed=True
             self.created=False
-        
+    
+    def packageShutdownScript(self, session):
+        clientKey, clientSecret, tokenKey, tokenSecret = self._getClientAndAccessTokens(session)
+        address = self.workflows[0].address
+        return "\n".join(["#! /bin/bash",
+                          "PID=$(pgrep -f Worker.py)",
+                          # if Worker isn't running then the instance shutdown properly so exit
+                          "if [[ \"$?\" -ne 0 ]]; then",
+                          "echo \"Worker not running, shutting down immediately.\"",
+                          "exit 0",
+                          "fi",
+                          # otherwise interupt the Worker.py program
+                          "echo \"Sending SIGINT to $PID\"",
+                          "kill -2 $PID",
+                          "echo \"$PID is done\"",
+                          # possibly write disk contents file but really not a good idea because there might be half complete files from the interupted command(s)
+                          # "\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/writeDiskContentFile.py"), self.read_write_disks)),
+                          # send preempted signal to server
+                          "/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address + "--PR T"
+                          ])
+    
     # try command without erroring for some number of tries
     def trycommand(self, func, *args, **kwargs):
         tries = 0

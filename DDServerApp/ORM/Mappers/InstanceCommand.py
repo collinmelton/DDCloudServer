@@ -166,7 +166,7 @@ class InstanceCommand(orm.Base):
                         if tp.read_bytes!=None and lasttp.read_bytes!=None: 
                             toappend.append(float(tp.read_bytes-lasttp.read_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000)
                         else: toappend.append(0)
-                        print "write bytes", tp.write_bytes, lasttp.write_bytes, float(tp.write_bytes-lasttp.write_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000
+#                         print "write bytes", tp.write_bytes, lasttp.write_bytes, float(tp.write_bytes-lasttp.write_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000
                         if tp.write_bytes!=None and lasttp.write_bytes!=None: 
                             toappend.append(float(tp.write_bytes-lasttp.write_bytes)/max((tp.time-lasttp.time).total_seconds(), 1)/1000000)
                         else: toappend.append(0)

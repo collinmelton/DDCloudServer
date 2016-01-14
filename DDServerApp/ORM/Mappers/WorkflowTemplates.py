@@ -90,11 +90,12 @@ class WorkflowTemplate(orm.Base):
     def isActive(self):
         return any([wf.active for wf in self.workflows])
     
-    def startWorkflow(self, session, logfilename, address):
+    def startWorkflow(self, session, logfilename, address, workflowname):
         from Workflow import Workflow
         print "imported"
         if not self.isActive():
-            wf = Workflow(self.name, self, self.user, logfilename, address)
+            print workflowname
+            wf = Workflow(workflowname, self, self.user, logfilename, address)
             "print not active found workflow"
             wf.start(session)
             print "starting workflow"
