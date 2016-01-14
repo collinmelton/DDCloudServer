@@ -575,6 +575,8 @@ def workflowLauncher(user, data, stop):
         wfid = getID(request.form["activeWorkflowSelect"])
     else:
         wfid = getID(request.form["launcherWorkflowSelect"])
+        workflowname = request.form["launcherWorkflowRunName"]
+        print workflowname
     if VERBOSE: print "finding workflow"
     wf = WorkflowTemplate.findByID(SESSION, wfid, user)
     if VERBOSE: print "found workflow"
@@ -587,7 +589,7 @@ def workflowLauncher(user, data, stop):
         if VERBOSE: print logfilename
         address = request.url_root
         if VERBOSE: print address
-        wf.startWorkflow(SESSION, logfilename, address)
+        wf.startWorkflow(SESSION, logfilename, address, workflowname)
     else:
         if VERBOSE: print "stopping workflow"
         wf.stopWorkflow(SESSION)
@@ -667,6 +669,17 @@ def finish():
         if VERBOSE: print "finishing"
         return jsonify(client.instance.finish(SESSION))
 
+@app.route('/api/preempted', methods=['GET'])
+@oauth.require_oauth('full')
+def preempted():
+    if VERBOSE: print "PREEMPTED!!!!"
+    if request.method == "GET":
+        client = request.oauth.client
+        if VERBOSE: print "restarting"
+        time.sleep(120) # wait for preemption to complete
+        return jsonify(client.instance.restart(SESSION))
+    
+    
 # @app.route('/trial/', methods=['GET','POST'])
 # def annotatenewtrial():
 #     user, trialannotationset, redirect_return = getUserAndTrial(None, redirect_dest="index")
