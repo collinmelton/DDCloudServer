@@ -6,7 +6,7 @@
 <script src="https://www.google.com/jsapi" type="text/javascript"></script>
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script>
-    google.load("visualization", "1.1", {packages:["table", "corechart"]});
+    google.load("visualization", "1.1", {packages:["table", "corechart", "controls"]});
     // google.charts.load('current', {'packages':['corechart']});
 </script>
 <script src="/static/assets/customjs/custom.js"></script>
@@ -71,6 +71,46 @@ $(document).ready(function(){
                 <div class="row">
                     <div class="col-md-12">
                         <h3>Command Performance</h3>
+                        <div id="perf_dashboard">
+                            <table class="columns">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div id="dashboard_selector" style="padding-left: 15px"></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div id="cpu_chart" style="padding-top: 15px"><div style="position: relative;"><div dir="ltr" style="position: relative; width: 300px; height: 300px;"></div>
+                                        </td>
+                                        <td>
+                                            <div id="mem_chart" style="padding-top: 30px"><div style="position: relative;"><div dir="ltr" style="position: relative; width: 300px; height: 300px;"></div>
+                                        </td>
+                                        <td>
+                                            <div id="memgb_chart" style="padding-top: 30px"><div style="position: relative;"><div dir="ltr" style="position: relative; width: 300px; height: 300px;"></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div id="read_chart" style="padding-top: 15px"><div style="position: relative;"><div dir="ltr" style="position: relative; width: 300px; height: 300px;"></div>
+                                        </td>
+                                        <td>
+                                            <div id="write_chart" style="padding-top: 15px"><div style="position: relative;"><div dir="ltr" style="position: relative; width: 300px; height: 300px;"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <!-- <div class="row">
+                                <div id="dashboard_selector"></div>
+                                <div id="cpu_chart"></div>
+                                <div id="mem_chart"></div>
+                            </div>
+                            <div class="row">
+                                <div id="memgb_chart"></div>
+                                <div id="read_chart"></div>
+                                <div id="write_chart"></div>
+                            </div> -->
+                        </div>
                         <div id="command_chart"></div>    
                     </div>
                 </div>

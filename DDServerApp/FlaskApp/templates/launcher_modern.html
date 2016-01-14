@@ -42,11 +42,20 @@ $(document).ready(function(){
                 <h1 class="page-header">Workflow Launcher</h1>
                 <div id="launcher_section">
                     <h3 class="page-header">Launch Workflow</h3>
+                    <p class="help-block"> 
+                        Select a workflow to launch. Only one run of each defined workflow can be launched at a time. This
+                        is to help minimize the risk of duplicate naming of disks and instances between workflow runs
+                        from the same workflow. Duplicate naming of simultaneous runs can cause failure and/or unexpected behavior. 
+                    </p> 
                     <form id="workflows_form">
                         <div class="form-group">
                             <label for="launcherWorkflowSelect">Select a Workflow</label>
                             <select class="form-control", id="launcherWorkflowSelect" name="launcherWorkflowSelect">
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="launcherWorkflowRunName">Name Your Workflow Run</label>
+                            <input type="text" class="form-control" id="launcherWorkflowRunName" name="launcherWorkflowRunName" placeholder="Name of Workflow Run">
                         </div>
                         <button type="button" onclick="submitForm(event, 'launchworkflow', 'launch', 'launcher', true)" class="btn btn-primary">Launch</button>
                     </form>

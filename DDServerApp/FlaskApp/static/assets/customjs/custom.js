@@ -1054,9 +1054,66 @@ function getDashboardData(data_type, data, callback) {
 }
 
 function drawChart(raw_data, options, element_id) {
-	var data = google.visualization.arrayToDataTable(raw_data);
-	var chart = new google.visualization.LineChart(document.getElementById(element_id));
-    chart.draw(data, options);
+	var columns = raw_data[1];
+	var dashboard = new google.visualization.Dashboard(
+		document.getElementById('perf_dashboard'));
+	var dashboardDataSelector = new google.visualization.ControlWrapper({
+          'controlType': 'NumberRangeFilter',
+          'containerId': 'dashboard_selector',
+          'options': {
+            'filterColumnLabel': 'Time (min)'
+          }});
+    var cpuChart = new google.visualization.ChartWrapper({
+          'chartType': 'LineChart',
+          'containerId': 'cpu_chart',
+          'options': {legend: {position: 'bottom'},
+          			  series: {0: { color: '#e2431e'}}
+          			  },
+          'view': {'columns': [0, 1]}
+        });
+    var memChart = new google.visualization.ChartWrapper({
+          'chartType': 'LineChart',
+          'containerId': 'mem_chart',
+          'options': {legend: {position: 'bottom'},
+          			  series: {0: { color: '#e7711b'}}
+          			  },
+          'view': {'columns': [0, 2]}
+        });
+    var memgbChart = new google.visualization.ChartWrapper({
+          'chartType': 'LineChart',
+          'containerId': 'memgb_chart',
+          'options': {legend: {position: 'bottom'},
+          			  series: {0: { color: '#f1ca3a'}}
+          			  },
+          'view': {'columns': [0, 3]}
+        });
+    var readChart = new google.visualization.ChartWrapper({
+          'chartType': 'LineChart',
+          'containerId': 'read_chart',
+          'options': {legend: {position: 'bottom'},
+          			  series: {0: { color: '#6f9654'}}
+          			  },
+          'view': {'columns': [0, 4]}
+        });
+    var writeChart = new google.visualization.ChartWrapper({
+          'chartType': 'LineChart',
+          'containerId': 'write_chart',
+          'options': {legend: {position: 'bottom'},
+          			  series: {0: { color: '#1c91c0'}}
+          			  },
+          'view': {'columns': [0, 5]}
+        });
+    dashboard.bind(dashboardDataSelector, cpuChart);
+    dashboard.bind(dashboardDataSelector, memChart);
+    dashboard.bind(dashboardDataSelector, memgbChart);
+    dashboard.bind(dashboardDataSelector, readChart);
+    dashboard.bind(dashboardDataSelector, writeChart);
+    var data = google.visualization.arrayToDataTable(raw_data);
+    dashboard.draw(data);
+    
+	
+	// var chart = new google.visualization.LineChart(document.getElementById(element_id));
+    // chart.draw(data, options);
 }	
 
 function toggleCommand(workflow_id, instance_id, command_id) {
