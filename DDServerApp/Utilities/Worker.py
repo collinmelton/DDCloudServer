@@ -164,7 +164,9 @@ if __name__ == "__main__":
 
     options = getOptions()
     w = Worker(options.tokenKey, options.tokenSecret, options.clientKey, options.clientSecret, options.address)
+    
     if options.preempted == "T":
+        print "preempting"
         w.preempted()
     else:
         w.run()
