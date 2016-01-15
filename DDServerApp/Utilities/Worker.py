@@ -66,12 +66,13 @@ class Communicator(object):
         return {}
         
     
-    def get(self, url):
+    def get(self, url, retries=None):
         '''
         Takes in body and header and returns response in json format.
         '''
+        if retries == None: retries = self.retries
         counter = 0
-        while counter<self.retries:
+        while counter<retries:
             response = self.client.get(url, auth=self.oauth)
             try: return json.loads(response._content)
             except: counter+=1
@@ -144,7 +145,7 @@ class Worker(object):
         self.communicator.get(self.base_address.strip("/")+"/api/finish")
         
     def preempted(self):
-        self.communicator.get(self.base_address.strip("/")+"/api/preempted")
+        self.communicator.get(self.base_address.strip("/")+"/api/preempted", retries=1)
         
 from optparse import OptionParser
 
