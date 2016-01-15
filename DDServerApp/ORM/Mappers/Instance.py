@@ -577,7 +577,7 @@ class Instance(orm.Base):
                           # possibly write disk contents file but really not a good idea because there might be half complete files from the interupted command(s)
                           # "\n".join(map(lambda disk: disk.contentSave("/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/writeDiskContentFile.py"), self.read_write_disks)),
                           # send preempted signal to server
-                          "/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address + "--PR T"
+                          "/usr/local/bin/python2.7 "+self.rootdir+"DDCloudServer/DDServerApp/Utilities/Worker.py --TK \""+tokenKey+"\" --TS \""+tokenSecret+"\" --CK "+clientKey+" --CS "+clientSecret + " --AD "+address + " --PR T"
                           ])
     
     # try command without erroring for some number of tries
