@@ -5,6 +5,11 @@ Created on Jan 21, 2016
 '''
 
 from celery import Celery
+import os, sys
+
+path = os.path.join(os.getcwd().split("DDServerApp")[0], "DDServerApp")
+if not path in sys.path:
+    sys.path.insert(1, path)
 
 app = Celery('CeleryApp', backend='rpc://', broker='amqp://guest@localhost//')
 
