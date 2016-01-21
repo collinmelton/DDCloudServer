@@ -199,9 +199,6 @@ class Workflow(orm.Base):
     def start(self, session):
         self.active = True
         if VERBOSE: print "set to active"
-#         print "images", self.gce_manager.list_images()
-#         print self.gce_manager.create_volume(10, "test", location="us-central1-a", snapshot=None, image="cloudtest110915", ex_disk_type="pd-standard")
-        
         if VERBOSE: print "initializing disks and instances"
         self.initDisksAndInstances()
          
@@ -211,7 +208,6 @@ class Workflow(orm.Base):
             
     def stop(self):
         self.active = False
-        return
         for instance in self.instances: 
             if instance.created and not instance.destroyed:
                 instance.destroy(destroydisks=False, force = False)
@@ -299,6 +295,12 @@ class Workflow(orm.Base):
             newinstances = it.generateInstances(varDict, disks, gce_manager=self.gce_manager, log = self.logfile)
             instances = self._mergeDicts(instances, newinstances)
         return instances
+    
+    @staticmethod
+    def findByID(session, wfid):
+        wfs=session.query(Workflow).filter(Workflow.id==int(wfid)).all()
+        if len(wfs)==0: return None
+        else: return wfs[0]
     
     @staticmethod
     def findByName(session, name, user):

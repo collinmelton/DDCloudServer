@@ -18,6 +18,11 @@ from DDServerApp.ORM import BASE_DIR
 from DDServerApp.ORM.Mappers import Client, RequestToken, AccessToken, Nonce, Workflow, WorkflowTemplate, Image, DiskTemplate, InstanceTemplate, CommandTemplate, Credentials
 
 
+
+
+
+app = Flask(__name__)
+
 # if '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/' in os.getcwd(): #=='/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring/FlaskApp':
 #     path = '/Users/cmelton/Documents/AptanaStudio3WorkspaceNew/ClinicalTrialStructuring'
 # else:
@@ -51,15 +56,21 @@ Bootstrap(app)
 oauth = OAuth1Provider(app)
 
 app.secret_key='\x9f\x058.\x1a\xde\x7fn\xc6G\x08\xd0m|\xdd\xd0\xf6)\x80x8*+\xc5'
-SESSION= orm.loadSession()
+SESSION= orm.loadSessionMaker() #loadSession()
 SESSION.rollback()
 orm.Base.metadata.create_all()
 app.config["JSON_SORT_KEY"] = False
 app.config["OAUTH1_PROVIDER_REALMS"]=[""]
 app.config["OAUTH1_PROVIDER_ENFORCE_SSL"] = False
-
-
 app.config["LOGFILEDIRECTORY"] = os.path.join(BASE_DIR, "LogFiles")
+
+app.config['CELERY_BROKER_URL'] = 'amqp://guest@localhost//'
+app.config['CELERY_RESULT_BACKEND'] = 'rpc://'
+
+from celery import Celery
+celeryApp = Celery('CeleryApp', backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'])
+celeryApp.conf.update(app.config)
+
 
 def getTimeStampedFile(name):
     return name+"_"+datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
@@ -68,9 +79,16 @@ def ensureDirectoryExists(mypath):
     if not os.path.exists(mypath): os.makedirs(mypath)
     return mypath
 
+# Manage database connection before and after request
+@app.before_request
+def before_request():
+    # create new session (connect to db)
+    SESSION()
 
-# app.config["OAUTH1_PROVIDER_SIGNATURE_METHODS"] = ( SIGNATURE_HMAC)
-
+@app.teardown_request
+def teardown_request(exception):
+    # remove the session (i.e. disconnect form db)
+    SESSION.remove()
 
 @app.route('/')
 def index():
@@ -108,9 +126,7 @@ def dashboard():
     if redirect!=None: return redirect
     return render_template('dashboard_modern.html')
 
-# @app.route('/about', methods=['GET'])
-# def about():
-#     return render_template('about_modern.html')
+#### A bunch of functions required for oauth to work ####
 
 @oauth.clientgetter
 def load_client(client_key):
@@ -224,42 +240,6 @@ def save_nonce(client_key, timestamp, nonce, request_token, access_token):
     SESSION.commit()
     return nonce
 
-# @app.route('/oauth/request_token')
-# @oauth.request_token_handler
-# def request_token():
-#     '''
-#     I believe the decorator takes care of returning something meaningful??
-#     '''
-#     return {}
-
-# def require_login(func):
-#     '''
-#     At some point maybe should require that the user be logged in otherwise redirect.
-#     For now don't worry about it because we want to skip the user authentication step.
-#     '''
-#     return func
-
-# @app.route('/oauth/authorize', methods=['GET', 'POST'])
-# @require_login
-# @oauth.authorize_handler
-# def authorize(*args, **kwargs):
-#     '''
-#     Returns the form if GET and if POST returns True if confirmation is yes.
-#     Might not be useful for API calls but could always just POST directly to authorize.
-#     For now if the client exists we will allow access and each worker instance will get a unique client id.
-#     Actually we can call authorize as the instance is made and pass the request token as part of the startup script although
-#     the nonce only last for 60 sec by default?
-#     '''
-# #     if request.method == 'GET':
-#     return jsonify(request)
-#     client_key = kwargs.get('resource_owner_key')
-#     client = Client.findFirst(client_key, SESSION)
-#     if client != None: return True
-#     return False
-#     kwargs['client'] = client
-#         return render_template('authorize.html', **kwargs)
-#     confirm = request.form.get('confirm', 'no')
-#     return confirm == 'yes'
 
 def parseVariables(d, varname="varname", varvalue = "varvalue"):
     varnames = [v for v in d.keys() if varname in v]
@@ -276,13 +256,13 @@ def parseVariables(d, varname="varname", varvalue = "varvalue"):
         result[d[name]]=d[value]
     return result
 
+# a function to get the id from a string in form 'id: name'
 def getID(name):
     if ":" not in str(name):
         return None
     return name.split(":")[0]
 
-
-
+# create edit of delete a workflow
 def newWorkflow(user, data, new, delete):
     if delete:
         wfid = getID(request.form["workflowWorkflowsSelect"])
@@ -308,6 +288,7 @@ def newWorkflow(user, data, new, delete):
                   "message": "updated workflow"}
     return result
 
+# create edit or delete an image
 def saveImage(user, data, delete):
     imageID = getID(data["imageImagesSelect"])
     name = data["imageNameOnImageForm"]
@@ -334,6 +315,7 @@ def saveImage(user, data, delete):
               "message": "updated image"}
     return result
 
+# create edit or delete a disk
 def saveDisk(user, data, variables, delete):
     if delete:
         diskID = getID(data["diskDisksSelect"])
@@ -377,9 +359,11 @@ def saveDisk(user, data, variables, delete):
               "message": "updated disk"}
     return result
 
+# make sure the file ends with extension pem
 def allowedFile(filename):
     return len(filename)>4 and filename[-4:]==".pem"
 
+# create edit or delete a set of credentials
 def saveCredentials(user, data, files, delete):
     name = data["credentialsName"]
     serviceAccount = data["serviceAccountEmail"]
@@ -410,6 +394,7 @@ def saveCredentials(user, data, files, delete):
     return {"updates": {"credentials": {c.id: c.dictForJSON() for c in user.credentials}},
             "message": "updated credentials"}
 
+# create edit or delete a command
 def saveCommand(user, data, delete):
     workflow = WorkflowTemplate.findByID(SESSION, getID(data["workflowInCommandForm"]), user)
     if workflow == None: return {"updates": {}, "message": "user permissions error on workflow"}
@@ -442,7 +427,7 @@ def saveCommand(user, data, delete):
     SESSION.commit()
     return result
         
-
+# create edit or delete an instance
 def saveInstance(user, data, variables, delete):
     if delete:
         if VERBOSE: print "deleting"
@@ -515,6 +500,7 @@ def saveInstance(user, data, variables, delete):
               "message": "updated instance"}
     return result  
 
+# returns a users workflow data in json format
 @app.route("/api/_getuserdata", methods=['GET'])
 def getUserData():
     user = getCurrentUser()
@@ -522,6 +508,7 @@ def getUserData():
     return jsonify({"data": user.getUserData(),
             "message": "updated data"})
 
+# returns various kinds of data needed for the dashboard page
 @app.route("/api/_getdashboarddata", methods=['GET'])
 def getDashboardData():
     user = getCurrentUser()
@@ -539,37 +526,7 @@ def getDashboardData():
     return jsonify({"data": data,
             "message": "hello!"})
 
-# from threading import Thread, Event
-#  
-# class LaunchWorkflowThread(Thread):
-#     '''
-#     This class will run a parallel thread to launch the workflow and monitor its status.
-#     '''
-#     
-#     def __init__(self, workflow, logfilename, address, session):
-#         Thread.__init__(self)
-#         self.workflow = workflow
-#         self._stop = Event()
-#         self.checking_interval = 60
-#         self.logfilename = logfilename
-#         self.address = address
-#         self.session = session
-# 
-#     def stop(self):
-#         self._stop.set()
-# 
-#     def stopped(self):
-#         return self._stop.isSet()
-#         
-#     def run(self):
-#         self.workflow.startWorkflow(self.session, self.logfilename, self.address)
-#         while not self.stopped():
-#             # check for restart
-#             self.workflow.checkForRestart() 
-#             # wait
-#             time.sleep(self.checking_interval)
-# better to use celery?!    
-
+# start or stop a workflow
 def workflowLauncher(user, data, stop):
     if stop:
         wfid = getID(request.form["activeWorkflowSelect"])
@@ -589,13 +546,16 @@ def workflowLauncher(user, data, stop):
         if VERBOSE: print logfilename
         address = request.url_root
         if VERBOSE: print address
-        wf.startWorkflow(SESSION, logfilename, address, workflowname)
+#         wf.startWorkflow(SESSION, logfilename, address, workflowname)
+        celeryApp.startWorkflow(wfid, logfilename, address, workflowname)
     else:
         if VERBOSE: print "stopping workflow"
-        wf.stopWorkflow(SESSION)
+        celeryApp.stopWorkflow(wfid)
+#         wf.stopWorkflow(SESSION)
     return {"updates": {"active_workflows": user.getActiveWorkflows()},  
             "message": "started workflow"}
-    
+
+# accepts and routes workflow editing data to the appropriate helpers    
 @app.route("/api/_workflows", methods=['POST'])
 def workflowEditor():
     if VERBOSE: print request.form
@@ -629,16 +589,6 @@ def workflowEditor():
 def access_token():
     return {}
 
-@app.route('/api/me')
-@oauth.require_oauth('full')
-def me():
-    '''
-    Returns user info in json form.
-    '''
-    return jsonify({"this":"worked!"})
-    user = request.oauth.user
-    return jsonify(username=user.name)
-
 @app.route('/api/commands', methods=['GET', 'POST'])
 @oauth.require_oauth('full')
 def commands():
@@ -661,7 +611,7 @@ def commands():
 @oauth.require_oauth('full')
 def finish():
     '''
-    Returns command info in json form.
+    A function that is called when an instance finishes.
     '''
     if VERBOSE: print "FINISHING!!!"
     if request.method == "GET":
@@ -672,75 +622,17 @@ def finish():
 @app.route('/api/preempted', methods=['GET'])
 @oauth.require_oauth('full')
 def preempted():
+    ''' 
+    A function that is called if an instance is preempted.
+    '''
     if VERBOSE: print "PREEMPTED!!!!"
     if request.method == "GET":
         client = request.oauth.client
         if VERBOSE: print "restarting"
         time.sleep(120) # wait for preemption to complete
         return jsonify(client.instance.restart(SESSION))
-    
-    
-# @app.route('/trial/', methods=['GET','POST'])
-# def annotatenewtrial():
-#     user, trialannotationset, redirect_return = getUserAndTrial(None, redirect_dest="index")
-#     if redirect_return != None: return redirect_return
-#     if trialannotationset == None:
-#         trialannotationset=ClinicalTrial.getUnannotatedTrial(user, SESSION, WORDSETS)
-#     return redirect(url_for('show_trial_data', tid=trialannotationset.id))
 
-
-# @app.route('/_updatedata', methods=['GET'])
-# def getTrialPageElementsData():
-#     tid = request.args.get('tid', 0, type=int)
-#     type = request.args.get('type', "none", type=str)
-#     print tid, type
-#     user, redirect_return = getUser(redirect_dest="index")
-#     if redirect_return != None: return jsonify({"message":"redirect error", "updates": {}})
-#     result = {}
-#     if type == "drug":
-#         content = "\n".join(map(lambda name: "<option value=\""+name+"\">"+name+"</option>", [d.name for d in trialannotationset.drugs+trialannotationset.potentialnewdrugs]))
-#         result = {"message": "", "updates": [{"type":"select", "name":'drugtoremove', "value":content}]}
-#     if type == "cancer":
-#         content = "\n".join(map(lambda name: "<option value=\""+name+"\">"+name+"</option>", [c.name for c in [ca.cancer for ca in trialannotationset.cancerannos]+trialannotationset.potentialnewcancers]))
-#         result = {"message": "", "updates": [{"type":"select", "name":'cancertoremove', "value":content}]}
-#     if type == "alteration":
-#         content = "\n".join(map(lambda name: "<option value=\""+name+"\">"+name+"</option>", [str(a.id)+": "+str(a) for a in trialannotationset.clinicaltrialalterations]))
-#         result = {"message": "", "updates": [{"type":"select", "name":'alterationtoremove', "value":content}]}
-#     if type == "status":
-#         content = "Annotation Finalized:&nbsp" + str(trialannotationset.annotated)
-#         result = {"message": "", "updates": [{"type":"h2", "name":"trial_annotation_status", "value":content}]}
-#     return jsonify(result)    
-
-# def expanderWrapHTML(text, id, splittype=" ", length=1, addontosnippet=""):
-#     if len(text)<30: return text
-#     if "</a>" in text: return text # dont wrap in expander if its a link
-#     if "</form>" in text: return text
-#     if len(text.split(splittype))<1: 
-#         snippet = text
-#     else:
-#         snippet = splittype.join(text.split(splittype)[0:min(len(text.split(splittype)), length)])
-#         if snippet == text: return text
-#         snippet+=addontosnippet
-#     if snippet != text: snippet+=" ..."
-#     expander = "<div onClick=\"openClose('"+str(id)+"')\" id=\"closer_"+str(id)+"\" class=\"texter_closer\" style=\"text-align: center; display:block;\">"+snippet+"<br /><br />\n</div>\n"
-#     expander += "<div onClick=\"openClose('"+str(id)+"')\" id=\"expander_"+str(id)+"\" class=\"texter\" style=\"text-align: center;  display:none;\">"+text+"<br /><br />\n</div>"
-#     return expander
-# 
-# def getTableJSONData(description, rows, length=1):
-#     result = {}
-#     result["numrows"]=len(rows)
-#     rowdicts = [dict([(key, {"value":expanderWrapHTML(val, str(id)+"_"+key.replace(" ", "_"), splittype=" ", length=length), "css":'text-align:center;'}) for key, val in row.items()]) for id, row in rows]
-#     result["rows"]=rowdicts
-#     result["colnames"]=[(val[0], val[1], key) for key, val in description.items()]
-#     return result
-# 
-# def getTrialDrugTableData(trialannotationset):
-#     toshow = trialannotationset.drugs+trialannotationset.potentialnewdrugs
-#     if len(toshow)==0: return {}
-#     description = toshow[0].getGvisTableData(trialannotationset.id)["description"]
-#     rows = map(lambda drug: ("dr"+str(drug.id), drug.getGvisTableData(trialannotationset.id)["data"]), toshow)    
-#     return getTableJSONData(description, rows)
-# 
+# returns the logged in user data
 def getUser(redirect_dest="index"):
     user, redirect_return = None, None
     if 'username' not in session:
@@ -752,6 +644,7 @@ def getUser(redirect_dest="index"):
         user = User.findUser(session["username"], SESSION)
     return user, redirect_return
 
+# renders page for creating a new user
 @app.route('/newuser', methods=['GET', 'POST'])
 def newuser():
     message = ""
@@ -774,7 +667,8 @@ def newuser():
                     session["admin"]=False
             return redirect(url_for('index'))
     return render_template('newuser_modern.html', error=message)
- 
+
+# renders the login page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     '''
