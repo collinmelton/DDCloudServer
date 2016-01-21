@@ -3,7 +3,7 @@ import os
 from sqlalchemy.ext.declarative.api import declared_attr
 from pattern.db import primary_key
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import aliased, sessionmaker,relationship,backref, synonym, with_polymorphic, joinedload_all
+from sqlalchemy.orm import aliased, sessionmaker,relationship,backref, synonym, with_polymorphic, joinedload_all, scoped_session
 from sqlalchemy import Column, Integer, String,DateTime,Date, func, Boolean, PickleType, Float, ForeignKeyConstraint
 from sqlalchemy import create_engine, func, or_
 from sqlalchemy.ext.declarative import declarative_base
@@ -63,6 +63,14 @@ class ORM_Utility(object):
         self.session = session()
         self.session.autoflush = False
         return self.session
+    
+    def loadSessionMaker(self):
+        ''' returns a scoped_session object 
+        e.g. Session = loadSessionMaker(), 
+        Session() now returns these the same session until Session.remove() is called
+        methods called on it will be proxied to unerlying session object
+        '''
+        return scoped_session(sessionmaker(bind=self.engine))
     
     def resetSession(self):
         self.session.close_all()
