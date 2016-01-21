@@ -6,7 +6,7 @@ Created on Jan 21, 2016
 
 from celery import Celery
 
-app = Celery('CeleryApp', broker='amqp://guest@localhost//')
+app = Celery('CeleryApp', backend='rpc://', broker='amqp://guest@localhost//')
 
 @app.task
 def add(x, y):
