@@ -66,11 +66,12 @@ app.config["LOGFILEDIRECTORY"] = os.path.join(BASE_DIR, "LogFiles")
 
 app.config['CELERY_BROKER_URL'] = 'amqp://guest@localhost//'
 app.config['CELERY_RESULT_BACKEND'] = 'rpc://'
-app.config['CELERY_APP_LOCATION'] = os.path.join(os.getcwd().split("DDServerApp")[0], "DDServerApp/Utilities/CeleryApp.py")
+app.config['CELERY_APP_LOCATION'] = "CeleryApp.py" #os.path.join(os.getcwd().split("DDServerApp")[0], "CeleryApp.py")
 
-from celery import Celery
-celeryApp = Celery('CeleryApp', backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'],
-                   include=[app.config['CELERY_APP_LOCATION']])
+# from celery import Celery
+# celeryApp = Celery('CeleryApp', backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'],
+#                    include=[app.config['CELERY_APP_LOCATION']])
+from CeleryApp import app as celeryApp
 celeryApp.conf.update(app.config)
 
 
