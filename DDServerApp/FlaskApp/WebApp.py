@@ -74,6 +74,9 @@ app.config['CELERY_APP_LOCATION'] = "CeleryApp.py" #os.path.join(os.getcwd().spl
 from CeleryApp import app as celeryApp
 from CeleryApp import startWorkflow as celeryStartWorkflow
 from CeleryApp import stopWorkflow as celeryStopWorkflow
+from CeleryApp import finishInstance as celeryFinishInstance
+from CeleryApp import restartInstance as celeryRestartInstance
+
 celeryApp.conf.update(app.config)
 
 
@@ -622,7 +625,9 @@ def finish():
     if request.method == "GET":
         client = request.oauth.client
         if VERBOSE: print "finishing"
-        return jsonify(client.instance.finish(SESSION))
+        celeryFinishInstance.delay(client.instance.id)
+        return jsonify({"finished": True})
+        # return jsonify(client.instance.finish(SESSION))
 
 @app.route('/api/preempted', methods=['GET'])
 @oauth.require_oauth('full')
@@ -634,8 +639,10 @@ def preempted():
     if request.method == "GET":
         client = request.oauth.client
         if VERBOSE: print "restarting"
-        time.sleep(120) # wait for preemption to complete
-        return jsonify(client.instance.restart(SESSION))
+        #time.sleep(120) # wait for preemption to complete
+        celeryRestartInstance.delay(client.instance.id)
+        return jsonify({"restarted": True})
+            #return jsonify({"restarted": client.instance.restart(SESSION)})
 
 # returns the logged in user data
 def getUser(redirect_dest="index"):

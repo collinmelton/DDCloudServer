@@ -331,15 +331,21 @@ class Instance(orm.Base):
     # in theory try to reboot node without destroying but so far that isn't working 
     # so for now just destroy node then create again
     def restart(self, session):
-        self.updateNode()
-        result = None
-        if result == None:
-            self.manual_restart(session)
-        self.printToLog("recreated instance on GCE")
-        self.created=True
-        self.failed=False
-        self.destroyed=False
-        self.status="started"
+        self.failed = any([c.failed for c in self.commands])
+        if self.failed: self.status = "errored"
+        if not self.failed and all([c.finished for c in self.commands]):
+            self.status = "completed"
+            return self.finish(session)
+        else:
+            result = self.updateNode()
+            if result == None:
+                self.manual_restart(session)
+            self.printToLog("recreated instance on GCE")
+            self.created=True
+            self.failed=False
+            self.destroyed=False
+            self.status="started"
+            return {"restarted": True}
 
     # return boolean to indicate if instance has been started
     def started(self):
@@ -601,4 +607,10 @@ class Instance(orm.Base):
         iids=session.query(Instance).join(InstanceWorkflowLink).join(Workflow).filter(Instance.name==name).filter(Workflow.user_id==user.id).all()
         if len(iids)==0: return None
         else: return iids[0]  
+        
+    @staticmethod
+    def findByID(session, iid):
+        instances = session.query(Instance).filter(Instance.id==int(iid)).all()
+        if len(instances)==0: return None
+        else: return instances[0]
 
