@@ -132,6 +132,15 @@ class WorkflowTemplate(orm.Base):
         self.workflow_vars[key]=value
     
     @staticmethod
+    def findByID(session, wfid, user=None):
+        if user == None:
+            wfs=session.query(WorkflowTemplate).filter(WorkflowTemplate.id==int(wfid)).all()
+        else:
+            wfs=session.query(WorkflowTemplate).filter(WorkflowTemplate.id==int(wfid)).filter(WorkflowTemplate.user_id==user.id).all()
+        if len(wfs)==0: return None
+        else: return wfs[0]
+
+    @staticmethod
     def findByID(session, wfid, user):
         wfs=session.query(WorkflowTemplate).filter(WorkflowTemplate.id==int(wfid)).filter(WorkflowTemplate.user_id==user.id).all()
         if len(wfs)==0: return None

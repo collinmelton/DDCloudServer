@@ -14,7 +14,7 @@ if not path in sys.path:
 
 app = Celery('CeleryApp', backend='rpc://', broker='amqp://guest@localhost//')
 
-from DDServerApp.ORM.Mappers import orm, User, Workflow
+from DDServerApp.ORM.Mappers import orm, User, Workflow, WorkflowTemplate
 SESSION= orm.loadSessionMaker()
 
 @app.task
@@ -23,10 +23,10 @@ def add(x, y):
 
 @app.task
 def startWorkflow(wfid, logfilename, address, workflowname):
-    wf = Workflow.findByID(SESSION, wfid)
-    return wf.startWorkflow(SESSION, logfilename, address, workflowname)
+    wft = WorkflowTemplate.findByID(SESSION, wfid)
+    return wft.startWorkflow(SESSION, logfilename, address, workflowname)
 
 @app.task
 def stopWorkflow(wfid):
-    wf = Workflow.findByID(SESSION, wfid)
-    return wf.stopWorkflow(SESSION)
+    wft = WorkflowTemplate.findByID(SESSION, wfid)
+    return wft.stopWorkflow(SESSION)
