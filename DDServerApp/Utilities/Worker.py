@@ -57,9 +57,9 @@ class Communicator(object):
         while counter<self.retries:
             if VERBOSE: print "body:", body
             if headers == None:
-                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder))
+                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder), verify=False)
             else:
-                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder), headers=headers)
+                response = self.client.post(url, auth=self.oauth,data=json.dumps(body, cls = MyJSONEncoder), headers=headers, verify=False)
             try: return json.loads(response._content)
             except: counter+=1
             time.sleep(self.sleeptime)
@@ -73,7 +73,7 @@ class Communicator(object):
         if retries == None: retries = self.retries
         counter = 0
         while counter<retries:
-            response = self.client.get(url, auth=self.oauth)
+            response = self.client.get(url, auth=self.oauth, verify=False)
             try: return json.loads(response._content)
             except: counter+=1
             time.sleep(self.sleeptime)
