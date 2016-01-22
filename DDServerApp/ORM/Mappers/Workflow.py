@@ -212,7 +212,7 @@ class Workflow(orm.Base):
             if instance.created and not instance.destroyed:
                 instance.destroy(destroydisks=False, force = False)
                 if not instance.destroyed: instance.destroy(destroydisks=False, force = True)
-        for disk in self.disks:
+        for disk in list(set(self.disks)):
             if disk.created and not disk.destroyed: disk.destroy()
     
     def checkIfFinished(self):
