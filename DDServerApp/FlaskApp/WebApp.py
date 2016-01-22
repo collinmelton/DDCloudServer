@@ -72,6 +72,8 @@ app.config['CELERY_APP_LOCATION'] = "CeleryApp.py" #os.path.join(os.getcwd().spl
 # celeryApp = Celery('CeleryApp', backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'],
 #                    include=[app.config['CELERY_APP_LOCATION']])
 from CeleryApp import app as celeryApp
+from CeleryApp import startWorkflow as celeryStartWorkflow
+from CeleryApp import stopWorkflow as celeryStopWorkflow
 celeryApp.conf.update(app.config)
 
 
@@ -550,10 +552,10 @@ def workflowLauncher(user, data, stop):
         address = request.url_root
         if VERBOSE: print address
 #         wf.startWorkflow(SESSION, logfilename, address, workflowname)
-        celeryApp.startWorkflow(wfid, logfilename, address, workflowname)
+        celeryStartWorkflow(wfid, logfilename, address, workflowname)
     else:
         if VERBOSE: print "stopping workflow"
-        celeryApp.stopWorkflow(wfid)
+        celeryStopWorkflow(wfid)
 #         wf.stopWorkflow(SESSION)
     return {"updates": {"active_workflows": user.getActiveWorkflows()},  
             "message": "started workflow"}
