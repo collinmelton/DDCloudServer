@@ -552,10 +552,10 @@ def workflowLauncher(user, data, stop):
         address = request.url_root
         if VERBOSE: print address
 #         wf.startWorkflow(SESSION, logfilename, address, workflowname)
-        celeryStartWorkflow(wfid, logfilename, address, workflowname)
+        celeryStartWorkflow.delay(wfid, logfilename, address, workflowname)
     else:
         if VERBOSE: print "stopping workflow"
-        celeryStopWorkflow(wfid)
+        celeryStopWorkflow.delay(wfid)
 #         wf.stopWorkflow(SESSION)
     return {"updates": {"active_workflows": user.getActiveWorkflows()},  
             "message": "started workflow"}
