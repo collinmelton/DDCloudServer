@@ -96,6 +96,8 @@ class WorkflowTemplate(orm.Base):
         if not self.isActive():
             print workflowname
             wf = Workflow(workflowname, self, self.user, logfilename, address)
+            session.add(wf)
+            session.commit()
             "print not active found workflow"
             wf.start(session)
             print "starting workflow"

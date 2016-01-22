@@ -205,6 +205,8 @@ class Workflow(orm.Base):
         if VERBOSE: print "starting instances if ready"
         for instance in self.instances:
             instance.startIfReady(session)
+            session.add(instance)
+            session.commit()
             
     def stop(self):
         self.active = False

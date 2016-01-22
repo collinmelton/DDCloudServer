@@ -25,10 +25,6 @@ class SqlAlchemyTask(Task):
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         SESSION.remove()
 
-
-
-
-
 @app.task(base=SqlAlchemyTask)
 def add(x, y):
     return x + y
