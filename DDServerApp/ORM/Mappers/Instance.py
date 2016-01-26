@@ -20,7 +20,14 @@ class InstanceDependencyRelation(orm.Base):
     child_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
     parent_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
 
-class DiskInstanceLink(orm.Base):
+class ReadDiskInstanceLink(orm.Base):
+    '''
+    This relation maps many disks to many instances.
+    '''
+    disk_id = Column(Integer, ForeignKey('disk.id'), primary_key=True)
+    instance_id = Column(Integer, ForeignKey('instance.id'), primary_key=True)
+    
+class ReadWriteDiskInstanceLink(orm.Base):
     '''
     This relation maps many disks to many instances.
     '''
@@ -39,8 +46,8 @@ class Instance(orm.Base):
                         secondaryjoin=id==InstanceDependencyRelation.child_id,
                         backref="next_instances")
     node_params = Column(PickleType)
-    read_disks = relationship(Disk, secondary='diskinstancelink')
-    read_write_disks = relationship(Disk, secondary='diskinstancelink')
+    read_disks = relationship(Disk, secondary='readdiskinstancelink')
+    read_write_disks = relationship(Disk, secondary='readwritediskinstancelink')
     boot_disk_id = Column(Integer, ForeignKey("disk.id"))
     boot_disk = relationship(Disk)
     created = Column(Boolean)
