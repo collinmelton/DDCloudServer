@@ -491,11 +491,19 @@ class Instance(orm.Base):
             # change mode of disks and prepare them in a list for node creation
             for disk in self.read_disks:
                 disk.mode="READ_ONLY"
+                session.add(disk)
+                session.commit()
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
+                session.add(disk)
+                session.commit()
             additionalDisks=self.read_disks+self.read_write_disks
             if VERBOSE: print additionalDisks
+            for d in additionalDisks:
+                print d.name, d.mode
             additionalDisks = list(set(additionalDisks))
+            for d in additionalDisks:
+                print d.name, d.mode
             if VERBOSE: print additionalDisks
             
             # create node = GCE instance

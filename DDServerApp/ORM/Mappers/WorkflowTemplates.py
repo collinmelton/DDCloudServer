@@ -478,9 +478,8 @@ class InstanceTemplate(orm.Base):
             result[name] = Instance(name, self.machine_type, self.boot_disk.image, self.location, 
                      self.ex_network, self.ex_tags, self.ex_metadata, dependency_names, 
                      read_disks, read_write_disks, boot_disk, command_dict, 
-                     rootdir=self.boot_disk.image.rootdir, preemptible=True, numLocalSSD=0, 
+                     rootdir=self.boot_disk.image.rootdir, preemptible=self.preemptible, numLocalSSD=self.numLocalSSD, 
                      localSSDInitSources="", localSSDDests="", gce_manager=gce_manager, log = log)
-            
         return result            
         
     @staticmethod
