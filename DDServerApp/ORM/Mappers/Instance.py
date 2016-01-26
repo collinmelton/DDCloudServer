@@ -489,19 +489,25 @@ class Instance(orm.Base):
                 if VERBOSE: print "after", self.node_params["ex_metadata"]["items"]
 
             # change mode of disks and prepare them in a list for node creation
+            print "setting read disks"
             for disk in self.read_disks:
                 disk.mode="READ_ONLY"
                 session.add(disk)
                 session.commit()
+                print disk.name, disk.mode
+            print "setting read/write disks"
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
                 session.add(disk)
                 session.commit()
+                print disk.name, disk.mode
             additionalDisks=self.read_disks+self.read_write_disks
+            print "additional disks"
             if VERBOSE: print additionalDisks
             for d in additionalDisks:
                 print d.name, d.mode
             additionalDisks = list(set(additionalDisks))
+            print "additional disks after removing dups"
             for d in additionalDisks:
                 print d.name, d.mode
             if VERBOSE: print additionalDisks
