@@ -499,15 +499,15 @@ class Instance(orm.Base):
             print "setting read disks"
             for disk in self.read_disks:
                 disk.mode="READ_ONLY"
-                session.add(disk)
-                session.commit()
-                print disk.name, disk.mode
+#                 session.add(disk)
+#                 session.commit()
+#                 print disk.name, disk.mode
             print "setting read/write disks"
             for disk in self.read_write_disks:
                 disk.mode="READ_WRITE"
-                session.add(disk)
-                session.commit()
-                print disk.name, disk.mode
+#                 session.add(disk)
+#                 session.commit()
+#                 print disk.name, disk.mode
             additionalDisks=self.read_disks+self.read_write_disks
             print "additional disks"
             if VERBOSE: print additionalDisks
