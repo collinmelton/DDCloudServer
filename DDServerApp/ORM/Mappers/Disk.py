@@ -201,10 +201,12 @@ class Disk(orm.Base):
         if self.created and not self.destroyed:
             disk = self.updateDisk()
             node = inst.updateNode()
-            self.printToLog("trying to detach disk on GCE from "+inst.name)
+            print "trying to detach disk on GCE from "+inst.name, node, disk
+            print node.name, disk.name
             if self.gce_manager.detach_volume(disk, node):
                 print "detach successful"
-            else: "detach not successful"
+            else: 
+                print "detach not successful"
 #             self.trycommand(self.gce_manager.detach_volume, disk, node)
             self.printToLog("detached disk on GCE from "+inst.name)
 
