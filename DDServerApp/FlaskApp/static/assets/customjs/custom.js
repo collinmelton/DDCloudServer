@@ -982,9 +982,9 @@ function addCommandDependency(command) {
 
 //// CODE FOR LAUNCHER PAGE
 
-Array.prototype.diff = function(a) {
-    return this.filter(function(i) {return a.indexOf(i) < 0;});
-};
+// Array.prototype.diff = function(a) {
+    // return this.filter(function(i) {return a.indexOf(i) < 0;});
+// };
 
 function initLauncherWorkflowForm() {
 	// console.log("initializing launcher form");
