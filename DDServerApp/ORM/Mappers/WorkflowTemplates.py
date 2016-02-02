@@ -293,6 +293,7 @@ class DiskTemplate(orm.Base):
         return result
 
     def generateDisks(self, varDict, gce_manager=None, log = None):
+        print "generating disks, logfile:", log
         variableDicts = self._parseVariableDicts(self._mergeDicts(varDict, self.disk_vars))
         result = {}
         from DDServerApp.ORM.Mappers import Disk
