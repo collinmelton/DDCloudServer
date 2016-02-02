@@ -989,13 +989,19 @@ Array.prototype.diff = function(a) {
 function initLauncherWorkflowForm() {
 	// console.log("initializing launcher form");
 	var activeWorkflows = getData(["active_workflows"]);
+	console.log("active workflows");
+	console.log(activeWorkflows);
 	$("#activeWorkflowSelect").html(getOptions(activeWorkflows));
 	var workflows = getData(["workflows"]);
 	var inactiveworkflows = {};
 	var inactiveKeys = Object.keys(workflows).diff(Object.keys(activeWorkflows));
+	console.log("inactiveKeys");
+	console.log(inactiveKeys);
 	for (key in inactiveKeys) {
 		inactiveworkflows[key] = workflows[key];
 	}
+	console.log("inactiveworkflows");
+	console.log(inactiveworkflows);
 	$("#launcherWorkflowSelect").html(getOptions(inactiveworkflows));
 }
 
