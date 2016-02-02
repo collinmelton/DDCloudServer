@@ -413,6 +413,8 @@ class Instance(orm.Base):
         if not self.failed and all([c.finished for c in self.commands]):
             self.status = "completed"
         print "status:", self.status
+        session.add(self)
+        session.commit()
         result = {}
         if self.status == "completed":
             self.destroy(instances=self.workflows[0].instances, destroydisks=True, force = False)

@@ -177,6 +177,7 @@ class Disk(orm.Base):
                 disk_names=map(lambda x: x.name, inst.read_disks+inst.read_write_disks)
                 if self.name in disk_names:
                     if inst.status!="complete":
+                        print "disk not ready to be destroyed", inst.name, inst.status
                         return
             if VERBOSE: print "should destroy "+self.name
             self.destroy()
