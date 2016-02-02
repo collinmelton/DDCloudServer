@@ -995,6 +995,7 @@ function initLauncherWorkflowForm() {
 	var workflows = getData(["workflows"]);
 	console.log("workflows");
 	console.log(workflows);
+	console.log(Object.keys(workflows));
 	var inactiveworkflows = {};
 	var inactiveKeys = [];
 	for (key in Object.keys(workflows)) {
