@@ -993,6 +993,8 @@ function initLauncherWorkflowForm() {
 	console.log(activeWorkflows);
 	$("#activeWorkflowSelect").html(getOptions(activeWorkflows));
 	var workflows = getData(["workflows"]);
+	console.log("workflows");
+	console.log(workflows);
 	var inactiveworkflows = {};
 	var inactiveKeys = [];
 	for (key in Object.keys(workflows)) {
