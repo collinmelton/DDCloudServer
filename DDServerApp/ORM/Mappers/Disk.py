@@ -167,7 +167,8 @@ class Disk(orm.Base):
         if VERBOSE: print "created", self.created, "destroyed", self.destroyed
         if self.created and not self.destroyed: 
             if VERBOSE: print "about to destroy", self.name
-            self.trycommand(self.gce_manager.destroy_volume, disk)
+            self.gce_manager.destroy_volume(disk)
+#             self.trycommand(self.gce_manager.destroy_volume, disk)
             if VERBOSE: print "destroyed", self.name
             self.printToLog("destroyed disk on GCE")
         self.destroyed=True
