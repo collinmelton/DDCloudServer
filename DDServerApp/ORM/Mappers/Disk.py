@@ -165,7 +165,7 @@ class Disk(orm.Base):
         if VERBOSE: print "destroying", self.name
         disk = self.updateDisk()
         if VERBOSE: print "created", self.created, "destroyed", self.destroyed
-        if self.created and not self.destroyed: 
+        if disk!=None and self.created and not self.destroyed: 
             if VERBOSE: print "about to destroy", self.name
             self.gce_manager.destroy_volume(disk)
 #             self.trycommand(self.gce_manager.destroy_volume, disk)
