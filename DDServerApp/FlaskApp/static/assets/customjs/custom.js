@@ -1009,7 +1009,8 @@ function initLauncherWorkflowForm() {
 	console.log("inactiveKeys");
 	console.log(inactiveKeys);
 	for (key in inactiveKeys) {
-		inactiveworkflows[key] = workflows[key];
+		el = inactiveKeys[key];
+		inactiveworkflows[el] = workflows[el];
 	}
 	console.log("inactiveworkflows");
 	console.log(inactiveworkflows);
