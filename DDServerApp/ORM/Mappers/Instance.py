@@ -91,7 +91,6 @@ class Instance(orm.Base):
         self.destroyed=False
         self.node=None
         self.failed=False
-        self.printToLog("initialized instance class")
         self.status="not started"
         self.rootdir=rootdir
         self.ssh_error_counter = 0
@@ -109,6 +108,7 @@ class Instance(orm.Base):
         self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
         self.gce_manager = gce_manager
         self.log = log
+        self.printToLog("initialized instance class")
         # moving to on instance creation to allow disk formatting to be done properly #self._initCommands()
     
     # client key and secret are unique to each instance, the access token and secret are unique
