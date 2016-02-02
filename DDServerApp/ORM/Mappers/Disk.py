@@ -59,6 +59,7 @@ class Disk(orm.Base):
         self.shutdown_dest = shutdown_dest
         self.gce_manager = gce_manager
         self.log = log
+        print "disk logfile: ", self.log
 
     # adds myDriver, disk, and log to instance
     def reinit(self, myDriver, log):
