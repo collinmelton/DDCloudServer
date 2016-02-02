@@ -216,7 +216,8 @@ class Workflow(orm.Base):
                 if not instance.destroyed: instance.destroy(destroydisks=False, force = True)
         currentDisks = [d.name for d in self.gce_manager.list_nodes()]
         print currentDisks
-        for disk in [d for d in list(set(self.disks)) if d.name in currentDisks]:
+        for disk in list(set(self.disks)): #[d for d in list(set(self.disks)) if d.name in currentDisks]:
+            print disk.name, (disk.name in currentDisks)
             if disk.created and not disk.destroyed: disk.destroy()
     
     def checkIfFinished(self):
