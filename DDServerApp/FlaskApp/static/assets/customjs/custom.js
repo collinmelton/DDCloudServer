@@ -700,6 +700,12 @@ function toggleAdvancedOptions() {
 	$("#optionalInstanceParams").toggle();
 }
 
+function hideAdvancedOptions() {
+	$("#optionalInstanceParams").hide();
+}
+
+
+
 // update disk options on instance form
 function updateInstanceOptionsOnInstanceForm() {
     var currentInstance = getInstance("instanceWorkflowsSelect", "instanceInstancesSelect");    
@@ -976,12 +982,21 @@ function addCommandDependency(command) {
 
 //// CODE FOR LAUNCHER PAGE
 
+Array.prototype.diff = function(a) {
+    return this.filter(function(i) {return a.indexOf(i) < 0;});
+};
+
 function initLauncherWorkflowForm() {
 	// console.log("initializing launcher form");
+	var activeWorkflows = getData(["active_workflows"]);
+	$("#activeWorkflowSelect").html(getOptions(activeWorkflows));
 	var workflows = getData(["workflows"]);
-	$("#launcherWorkflowSelect").html(getOptions(workflows));
-	var workflows = getData(["active_workflows"]);
-	$("#activeWorkflowSelect").html(getOptions(workflows));
+	var inactiveworkflows = {};
+	var inactiveKeys = Object.keys(workflows).diff(Object.keys(activeWorkflows));
+	for (key in inactiveKeys) {
+		inactiveworkflows[key] = workflows[key];
+	}
+	$("#launcherWorkflowSelect").html(getOptions(inactiveworkflows));
 }
 
 //// CODE FOR DASHBOARD PAGE
@@ -1188,7 +1203,8 @@ function updatePageElements(page) {
 	    initDiskForm();
 	    initImageForm();
 	    initCommandsForm();	
-	    toggleAdvancedOptions();
+	    //toggleAdvancedOptions();
+	    hideAdvancedOptions();
     } else if (page=="launcher") {
     	initLauncherWorkflowForm();
     } else if (page =="dashboard") {
