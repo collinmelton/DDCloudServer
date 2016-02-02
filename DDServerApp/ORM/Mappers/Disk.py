@@ -123,9 +123,9 @@ class Disk(orm.Base):
     
     # print to log file
     def printToLog(self, text):
-        if "log" in self.__dict__ and self.log!=None:
-            output=self.name+"\t"+text
-            self.log.write(output)
+#         if "log" in self.__dict__ and self.log!=None:
+        output=self.name+"\t"+text
+        self.log.write(output)
 
     # some function to output class data in tsv form
     def toString(self):
@@ -161,10 +161,13 @@ class Disk(orm.Base):
     
     # destroy disk on GCE
     def destroy(self):
+        if VERBOSE: print "destroying", self.name
         disk = self.updateDisk()
         if VERBOSE: print "created", self.created, "destroyed", self.destroyed
         if self.created and not self.destroyed: 
+            if VERBOSE: print "about to destroy", self.name
             self.trycommand(self.gce_manager.destroy_volume, disk)
+            if VERBOSE: print "destroyed", self.name
             self.printToLog("destroyed disk on GCE")
         self.destroyed=True
         self.disk = None

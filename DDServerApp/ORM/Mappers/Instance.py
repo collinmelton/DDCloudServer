@@ -310,9 +310,9 @@ class Instance(orm.Base):
 
     # function to print text to the log file
     def printToLog(self, text):
-        if "log" in self.__dict__ and self.log!=None:
-            output=self.name+"\t"+text
-            self.log.write(output)
+#         if "log" in self.__dict__ and self.log!=None:
+        output=self.name+"\t"+text
+        self.log.write(output)
 
     # returns text with the header and values in tab delimitted format 
     def toString(self):
