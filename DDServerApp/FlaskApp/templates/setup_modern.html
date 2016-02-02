@@ -213,7 +213,9 @@ $(document).ready(function(){
                         <div class="form-group">
                             <button type="button" class="btn btn-default" onclick="addInstanceDependency('');">Add a Dependency</button>
                         </div>
-                        <label for="optionalInstanceParams" onclick="toggleAdvancedOptions()">Click Here for Advanced Options</label>
+                        <div onclick="toggleAdvancedOptions()">
+                            <label for="optionalInstanceParams">Click Here for Advanced Options</label>
+                        </div>
                         <div id="optionalInstanceParams">
                             <label for="ex_tags">Instance Tags</label>
                             <p class="help-block">
