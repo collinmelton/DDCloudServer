@@ -52,7 +52,6 @@ class Disk(orm.Base):
         self.destroyed=False
         self.disk=None
         self.mode="READ_WRITE"
-        self.printToLog("initialized disk class")
         self.formatted=False
         self.disk_type=disk_type
         self.init_source = init_source
@@ -60,6 +59,7 @@ class Disk(orm.Base):
         self.gce_manager = gce_manager
         self.log = log
         print "disk logfile: ", self.log
+        self.printToLog("initialized disk class")
 
     # adds myDriver, disk, and log to instance
     def reinit(self, myDriver, log):
