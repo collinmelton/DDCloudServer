@@ -999,6 +999,7 @@ function initLauncherWorkflowForm() {
 	var inactiveworkflows = {};
 	var inactiveKeys = [];
 	for (key in Object.keys(workflows)) {
+		console.log(key);
 		if ($.inArray(key, Object.keys(activeWorkflows))) {
 			inactiveKeys = inactiveKeys.concat([key]);
 		}
