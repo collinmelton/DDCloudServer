@@ -109,7 +109,7 @@ class Instance(orm.Base):
         self.buildNodeParams(machine_type, image.name, location, network, tagString, metadataString)
         self.gce_manager = gce_manager
         self.log = log
-        self._initCommands()
+        # moving to on instance creation to allow disk formatting to be done properly #self._initCommands()
     
     # client key and secret are unique to each instance, the access token and secret are unique
     # for each client, these 4 values ensure that a particular instance is getting access to the 
@@ -400,6 +400,7 @@ class Instance(orm.Base):
             return False
         # if not created create and not failed its ready so create
         if not self.created and not self.failed:
+            self._initCommands()
             self.create(session)
             return True
         print "nothing else to do", self.created, self.failed
