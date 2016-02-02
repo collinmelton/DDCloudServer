@@ -573,6 +573,7 @@ class Instance(orm.Base):
             if destroydisks:
                 disk.destroyifnotneeded(instances)
         for disk in self.read_write_disks:
+            print disk.name, force, node, "about to detach"
             if not force and node!=None: disk.detach(self)
             if destroydisks: 
                 disk.destroyifnotneeded(instances)

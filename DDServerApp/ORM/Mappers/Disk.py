@@ -197,11 +197,13 @@ class Disk(orm.Base):
     
     # detach disk from instance
     def detach(self, inst):
+        print "about to detatch", self.created, self.destroyed
         if self.created and not self.destroyed:
             disk = self.updateDisk()
             node = inst.updateNode()
             self.printToLog("trying to detach disk on GCE from "+inst.name)
-            self.trycommand(self.gce_manager.detach_volume, disk, node)
+            self.gce_manager.detach_volume(disk, node)
+#             self.trycommand(self.gce_manager.detach_volume, disk, node)
             self.printToLog("detached disk on GCE from "+inst.name)
 
     # try command for certain number of tries, sometimes GCE API doesn't work the first time its called
