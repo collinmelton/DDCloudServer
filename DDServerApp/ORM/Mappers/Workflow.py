@@ -48,7 +48,7 @@ class LogFile(orm.Base):
         if "lock" not in self.__dict__: self.lock=thread.allocate_lock()
     
     def __str__(self):
-        return self.fileName
+        return "log class: " +self.fileName
 
     # write with new line and date-time
     def write(self, textToWrite):
