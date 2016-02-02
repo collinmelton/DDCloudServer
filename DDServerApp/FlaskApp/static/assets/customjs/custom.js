@@ -994,10 +994,10 @@ function initLauncherWorkflowForm() {
 	$("#activeWorkflowSelect").html(getOptions(activeWorkflows));
 	var workflows = getData(["workflows"]);
 	var inactiveworkflows = {};
-	var inactivekeys = [];
+	var inactiveKeys = [];
 	for (key in Object.keys(workflows)) {
 		if ($.inArray(key, Object.keys(activeWorkflows))) {
-			inactivekeys = inactivekeys.concat([key]);
+			inactiveKeys = inactiveKeys.concat([key]);
 		}
 	}
 	// var inactiveKeys = Object.keys(workflows).diff(Object.keys(activeWorkflows));
