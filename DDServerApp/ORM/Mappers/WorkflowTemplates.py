@@ -106,7 +106,8 @@ class WorkflowTemplate(orm.Base):
     
     def stopWorkflow(self, session):
         for wf in self.workflows:
-            wf.stop()
+            if wf.active:
+                wf.stop()
         session.add_all(self.workflows)
         session.commit()
     
