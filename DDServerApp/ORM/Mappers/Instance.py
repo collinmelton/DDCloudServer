@@ -557,11 +557,15 @@ class Instance(orm.Base):
     
     # update and return node by checking if it exists on GCE
     def updateNode(self):
+        print self.node, self.__dict__.keys()
         if "node" not in self.__dict__ or self.node == None: 
-            node=self.trycommand(self.gce_manager.ex_get_node, self.name)
+            print "getting node"
+            node = self.gce_manager.ex_get_node(self.name)
+#             node=self.trycommand(self.gce_manager.ex_get_node, self.name)
         else: 
             node = None
         self.node = node 
+        print "node", node
         return node
     
     # destroy node on GCE
