@@ -154,7 +154,7 @@ class Disk(orm.Base):
         self.printToLog("updating disk "+self.name)
         if (self.created): # and ("disk" not in self.__dict__ or self.disk ==None): 
             disk=self.trycommand(self.gce_manager.ex_get_volume, self.name)
-            if disk==None: print "disk is None", self.name, self.gce_manager.list_volumes()
+#             if disk==None: print "disk is None", self.name, self.gce_manager.list_volumes()
             if VERBOSE: print "updated disk", disk
         else: disk = None
         self.disk = disk
@@ -167,8 +167,8 @@ class Disk(orm.Base):
         if VERBOSE: print "created", self.created, "destroyed", self.destroyed
         if disk!=None and self.created and not self.destroyed: 
             if VERBOSE: print "about to destroy", self.name
-            self.gce_manager.destroy_volume(disk)
-#             self.trycommand(self.gce_manager.destroy_volume, disk)
+#             self.gce_manager.destroy_volume(disk)
+            self.trycommand(self.gce_manager.destroy_volume, disk)
             if VERBOSE: print "destroyed", self.name
             self.printToLog("destroyed disk on GCE")
         self.destroyed=True
@@ -203,7 +203,7 @@ class Disk(orm.Base):
             node = inst.updateNode()
             print "trying to detach disk on GCE from "+inst.name, node, disk
 #             print node.name, disk.name
-            if self.gce_manager.detach_volume(disk, node):
+            if self.trycommand(self.gce_manager.detach_volume, disk, node): #self.gce_manager.detach_volume(disk, node):
                 print "detach successful"
             else: 
                 print "detach not successful"
