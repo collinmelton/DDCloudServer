@@ -563,7 +563,8 @@ class Instance(orm.Base):
             node = self.gce_manager.ex_get_node(self.name)
 #             node=self.trycommand(self.gce_manager.ex_get_node, self.name)
         else: 
-            node = None
+            if "node" in self.__dict__ and self.node !=None: node = self.node
+            else: node= None
         self.node = node 
         print "node", node
         return node
