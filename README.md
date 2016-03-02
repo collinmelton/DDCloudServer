@@ -6,6 +6,7 @@ This software is designed to run genomics workflows on the Google Compute Engine
 - [Configure GCE Image](#configure-gce-image)
 - [Get Service Account Authentication Info](#get-service-account-authentication-info) 
 - [Using the Webserver](#using-the-webserver)
+- [Alternative Licensing](#alternative-licensing)
 
 # Get Setup with GCE
 Get a GCE Account and setup a Google Cloud Storage bucket. URI should look something like this gs://bucketname/
@@ -210,3 +211,6 @@ The dashboard is divided into the following sections: (1) select a workflow, (2)
 
 ### Select an Instance
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Dashboard_performance.png "View Performance")
+
+# Alternative Licensing
+This project is licensed open source under GNU GPLv3. To inquire about alternative licensing options please contact the Stanford Office of Technology Licensing (www.otl.stanford.edu).
