@@ -5,8 +5,7 @@ This software is designed to run genomics workflows on the Google Compute Engine
 - [Get Setup with GCE](#get-setup-with-gce)
 - [Configure GCE Image](#configure-gce-image)
 - [Get Service Account Authentication Info](#get-service-account-authentication-info) 
-- [Run Test](#run-test) 
-- [Web Server Version](#web-server-version)
+- [Using the Webserver](#using-the-webserver)
 
 # Get Setup with GCE
 Get a GCE Account and setup a Google Cloud Storage bucket. URI should look something like this gs://bucketname/
@@ -174,11 +173,27 @@ uwsgi --socket 127.0.0.1:8081 --wsgi-file WSGI.py --callable app --processes 1 -
 First navigate your webbrowser to the public ip address of the webserver using https so https://your-servers-ip-address/. 
 
 ## Sign In or login
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Login_login.png "Login")
 
+## Setup a New Workflow
 
-## 
+### Name Your Workflow and Describe Workflow Variables
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_workflows.png "New Workflow")
 
+### Add Your Credentials
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_credentials.png "Add Credentials")
+
+### Add an Image
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_images.png "Add Image")
+
+### Specify Disks
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_disks.png "Add Disks")
+
+### Specify Instances
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_instances.png "Add Instances")
+
+### Specify Commands
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_commands.png "Add Commands")
 	
 # Web Server Version
 I am developing an updated version of the software that runs a webserver (link coming soon). This version allows the user to generate a workflow, launch a workflow, and view progress and performance of the workflow as it runs.
