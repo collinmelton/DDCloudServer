@@ -213,4 +213,4 @@ The dashboard is divided into the following sections: (1) select a workflow, (2)
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Dashboard_performance.png "View Performance")
 
 # Alternative Licensing
-This project is licensed open source under GNU GPLv3. To inquire about alternative licensing options please contact the Stanford Office of Technology Licensing (www.otl.stanford.edu).
+This project is licensed open source under GNU GPLv2. To inquire about alternative licensing options please contact the Stanford Office of Technology Licensing (www.otl.stanford.edu).
