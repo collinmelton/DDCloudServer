@@ -176,6 +176,7 @@ First navigate your webbrowser to the public ip address of the webserver using h
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Login_login.png "Login")
 
 ## Setup a New Workflow
+Setting up a new workflow requires some general details which include specifying your GCE credentials and adding an image. Next you should first specify disks that will be used by the instances, then instances that use the disks, and finally commands to be run on each instance. Some screenshots showing these steps are included below:
 
 ### Name Your Workflow and Describe Workflow Variables
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_workflows.png "New Workflow")
@@ -195,5 +196,17 @@ First navigate your webbrowser to the public ip address of the webserver using h
 ### Specify Commands
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_commands.png "Add Commands")
 	
-# Web Server Version
-I am developing an updated version of the software that runs a webserver (link coming soon). This version allows the user to generate a workflow, launch a workflow, and view progress and performance of the workflow as it runs.
+## Launch Your Workflow
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Launcher.png "Launch Workflow")
+
+## View Results and Monitor Performance
+The dashboard is divided into the following sections: (1) select a workflow, (2) view the instances in a workflow, (3) view commands in an instance, and (4) finally view performance of a command. Screenshots depicting these sections are provide below:
+
+### Select a Workflow and Instance
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Dashboard_instances.png "Select Workflow and Instance")
+
+### Select an Instance
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Dashboard_commands.png "Select Command")
+
+### Select an Instance
+![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Dashboard_performance.png "View Performance")
