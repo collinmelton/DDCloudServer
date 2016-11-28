@@ -48,7 +48,7 @@ From the GCE developers console boot a new instance. I've chosen CENTOS6.6 as th
 	
 	sudo pip install httplib2
 	
-	** a bunch of crap to install python2.7, easyinstall, pip, and get PyCrypto etc **
+	** a bunch of programs to install python2.7, easyinstall, pip, and get PyCrypto etc **
 	
 	sudo rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
 	 
