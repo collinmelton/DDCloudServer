@@ -159,7 +159,8 @@ source venv/bin/activate
 /opt/Python-2.7.6/venv/bin/pip install PyCrypto
 
 # install the ddserver software
-/usr/local/bin/gsutil -m cp -r gs://gbsc-gcp-lab-snyder-users-cmelton/DDServerStartup/DDCloudServer/ /var/
+cd /var/
+git clone git@github.com:collinmelton/DDCloudServer.git
 
 # turn off selinux to allow port forwarding? would be great to not have to do this
 setenforce 0
