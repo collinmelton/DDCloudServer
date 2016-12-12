@@ -1,8 +1,3 @@
-sudo yum install git
-	
-# Clone this project and note project location
-git clone git@github.com:collinmelton/DDCloudServer.git
-	
 # Install project specific dependencies
 sudo yum install libevent-devel python-devel
 sudo yum groupinstall "Development tools"
