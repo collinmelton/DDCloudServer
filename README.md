@@ -1,5 +1,5 @@
 # DDCloudServer
-This software is designed to run genomics workflows on the Google Compute Engine. The distinguishing characteristic of this software is that it is designed to automatically mount and unmount disk storage as needed during the course of the workflow. This is in contrast to NFS storage or saving intermediate results to cloud storage. In certain use cases this strategy more closely approaches optimal resource utilization.
+This software is designed to run genomics workflows on the Google Compute Engine. The distinguishing characteristic of this software is that it is designed to automatically mount and unmount disk storage as needed during the course of the workflow. This is in contrast to NFS storage or saving intermediate results to cloud storage. In certain use cases this strategy better optimizes resource utilization.
 
 # Contents
 - [Get Setup with GCE](#get-setup-with-gce)
@@ -15,9 +15,11 @@ Get a GCE Account and setup a Google Cloud Storage bucket. URI should look somet
 In this section we will configure a GCE Image for use as the OS on both the Master and Worker instances. 
 
 ## Boot GCE Instance
+
 From the GCE developers console boot a new instance. I've chosen CENTOS6.6 as the base image, but if you use a different base you may need to modify the software installation below. Make sure to enable full access to storage during setup. This is important because you will save you image to your Google Cloud Storage bucket. 
 
 ## Install Software (for CENTOS6.6)
+
 1. SSH into the new instance. 
 
 2. Install Git
@@ -26,73 +28,21 @@ From the GCE developers console boot a new instance. I've chosen CENTOS6.6 as th
 	
 3. Clone this project and note project location
 
-	git clone git@github.com:collinmelton/DDCloudServer.git
+	git clone https://github.com/collinmelton/DDCloudServer.git
+
+4. Note the current path. This is needed later when specifying your image in a workflow.
+    
+    pwd -P
 	
 4. Install project specific dependencies
 
-	** install development tools **
-	
-	sudo yum install libevent-devel python-devel
-	
-	sudo yum groupinstall "Development tools"
-	
-	** install pip, apache-libcloud, PyCrypto, and httplib2 **
-	
-	curl -o get-pip.py https://raw.githubusercontent.com/pypa/pip/master/contrib/get-pip.py
-	
-	sudo python get-pip.py
-	 
-	sudo pip install apache-libcloud
-	
-	sudo pip install PyCrypto
-	
-	sudo pip install httplib2
-	
-	** a bunch of programs to install python2.7, easyinstall, pip, and get PyCrypto etc **
-	
-	sudo rpm -Uvh http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
-	 
-	wget http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
-	
-	tar xvzf Python-2.7.6.tgz
-	
-	sudo yum install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel db4-devel libpcap-devel
-	
-	cd Python-2.7.6
-	
-	sudo ./configure --prefix=/usr/local --enable-unicode=ucs4 --enable-shared LDFLAGS="-Wl,-rpath /usr/local/lib"
-	
-	sudo make && sudo make altinstall
-	
-	wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py
-	
-	sudo /usr/local/bin/python2.7 ez_setup.py
-	
-	sudo /usr/local/bin/easy_install-2.7 pip
-	
-	sudo /usr/local/bin/pip2.7 install apache-libcloud
-	
-	sudo /usr/local/bin/pip2.7 install PyCrypto
-	
-	sudo /usr/local/bin/pip2.7 install httplib2
-
-	sudo /usr/local/bin/pip2.7 install psutil
-
-	sudo /usr/local/bin/pip2.7 install -U https://github.com/google/google-visualization-python/zipball/master
+    bash DDCloudServer/Setup/TestWorkerSetup.sh
 
 ## Create Image and Save to Cloud Storage
 
-	sudo gcimagebundle -d /dev/sda -o /tmp/ --log_file=/tmp/abc.log
-	
-	** check to see name of the image file from output of above command and edit commands below with this name **
-	
-	gsutil cp /tmp/imagename.image.tar.gz gs://yourbucketname/
-	
-	** below you can name your image, I've name the image cloudtest2, I think this can also be done with gcloud ** 
-	
-	~/google-cloud-sdk/bin/gcutil --project "your_project_name" addimage cloudtest2 gs://yourbucketname/imagename.image.tar.gz
-	or 
-	gcloud compute images create cloudtest2 --source-uri gs://yourbucketname/imagename.image.tar.gz
+    Follow instructions here: https://cloud.google.com/compute/docs/images/create-delete-deprecate-private-images
+
+    You need to delete your instance but keep the boot disk around. You can then create an image from that boot disk using the web console.
 
 
 # Get Service Account Authentication Info
@@ -100,76 +50,34 @@ In order to run the software you need to get a service account email address and
 
 You should make a pem file and note your service account email address in the format: numbersandletters@developer.gserviceaccount.com
 
+## Example for instance name test1 with boot disk named boot1.
+
+gcloud compute --project "cloudtest-152304" instances set-disk-auto-delete test1 --no-auto-delete --disk boot1 --zone "us-central1-a"
+
+gcloud compute --project "cloudtest-152304" instances delete test1 --zone "us-central1-a"
+
+gcloud compute --project "cloudtest-152304" images create workertest --source-disk boot1 --source-disk-zone "us-central1-a" --family worker
 
 # Launch Webserver
-Launch a new GCE instance on Centos6.6 with the following startup script. Make sure to enable https.
-```
-#! /bin/bash
 
-# install the server
-yum -y update yum
-yum -y install httpd
-yum -y install mod_wsgi
-yum -y install httpd-devel
-yum -y install gcc
-yum -y install mod_ssl
+Launch a new GCE instance on Centos6.6 with the following startup script. Make sure to enable https. You should specify the following as the startup script when launching the server.
 
-# install mod proxy add on to forward to port
-curl -O https://raw.githubusercontent.com/unbit/uwsgi/master/apache2/mod_proxy_uwsgi.c
-apxs -i -c mod_proxy_uwsgi.c
+## Install gcloud.
 
-# write the httpd conf files
-/usr/local/bin/gsutil cp gs://gbsc-gcp-lab-snyder-users-cmelton/DDServerStartup/uwsgi_forward.conf /etc/httpd/conf.d/uwsgi_forward.conf
-serverip=`/sbin/ifconfig eth0 | grep "inet" | awk '{print $2}' | awk 'NR==1' | cut -d':' -f2`
-sed -i -- "s/ServerName 146.148.39.167/ServerName $serverip/g" /etc/httpd/conf.d/uwsgi_forward.conf
-rm /etc/httpd/conf.d/wsgi.conf
-rm /etc/httpd/conf.d/ssl.conf
+    https://cloud.google.com/sdk/
 
-# install ssl add on 
-openssl req -new -x509 -days 365 -sha1 -newkey rsa:1024 -nodes -keyout server.key -out server.crt -subj "/O=Stanford/OU=Genetics/CN=$serverip"
-chown root:root server.key
-chmod 700 server.key
-chown root:root server.crt 
-chmod 700 server.crt 
-cp server.key /etc/pki/tls/private/localhost.key
-cp server.crt /etc/pki/tls/certs/localhost.crt
+## Clone the project repository.
 
-# install python2.7, pip, virtualenv, and python ddserver dependencies
-yum -y groupinstall "Development tools"
-yum -y install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel readline-devel tk-devel
-cd /opt
-wget --no-check-certificate https://www.python.org/ftp/python/2.7.6/Python-2.7.6.tar.xz
-tar xf Python-2.7.6.tar.xz
-cd Python-2.7.6
-./configure --prefix=/usr/local
-make && make altinstall
-wget https://bootstrap.pypa.io/get-pip.py
-/usr/local/bin/python2.7 get-pip.py
-/usr/local/bin/pip2.7 install virtualenv
-/usr/local/bin/virtualenv venv -p /usr/local/bin/python2.7
-source venv/bin/activate
-/opt/Python-2.7.6/venv/bin/pip install flask
-/opt/Python-2.7.6/venv/bin/pip install sqlalchemy
-/opt/Python-2.7.6/venv/bin/pip install pattern
-/opt/Python-2.7.6/venv/bin/pip install apache-libcloud
-/opt/Python-2.7.6/venv/bin/pip install flask_bootstrap
-/opt/Python-2.7.6/venv/bin/pip install uwsgi
-/opt/Python-2.7.6/venv/bin/pip install psutil
-/opt/Python-2.7.6/venv/bin/pip install flask_oauthlib
-/opt/Python-2.7.6/venv/bin/pip install PyCrypto
+	git clone https://github.com/collinmelton/DDCloudServer.git
 
-# install the ddserver software
-cd /var/
-git clone git@github.com:collinmelton/DDCloudServer.git
+## Start your server (replace project with the name of your own project).
 
-# turn off selinux to allow port forwarding? would be great to not have to do this
-setenforce 0
+    gcloud compute --project "cloudtest-152304" instances create "ddserver2" --zone "us-central1-c" --machine-type "n1-standard-1" --subnet "default" --maintenance-policy "MIGRATE" --scopes default="https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --tags "https-server" --image "/centos-cloud/centos-6-v20161208" --boot-disk-size "10" --boot-disk-type "pd-standard" --boot-disk-device-name "ddserver2" --metadata-from-file startup-script=DDCloudServer/Setup/ServerSetup.sh
 
-# start the server
-service httpd start
-cd /var/DDCloudServer/DDServerApp/FlaskApp/
-uwsgi --socket 127.0.0.1:8081 --wsgi-file WSGI.py --callable app --processes 1 --threads 1 --stats 127.0.0.1:9191
-```
+    gcloud compute --project "cloudtest-152304" firewall-rules create "default-allow-https" --allow tcp:443 --network "default" --source-ranges "0.0.0.0/0" --target-tags "https-server"
+
+Please allow a few minutes for the server to install and launch.
+
 
 # Using the Webserver
 First navigate your webbrowser to the public ip address of the webserver using https so https://your-servers-ip-address/. 
@@ -187,6 +95,7 @@ Setting up a new workflow requires some general details which include specifying
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_credentials.png "Add Credentials")
 
 ### Add an Image
+Make sure to fill in Installation Directory. If you neglect this step or specify the path incorrectly the worker instances won't be able to communicate with your server.
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_images.png "Add Image")
 
 ### Specify Disks
@@ -199,6 +108,7 @@ Setting up a new workflow requires some general details which include specifying
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Setup_commands.png "Add Commands")
 	
 ## Launch Your Workflow
+A new workflow can't be launched if an existing workflow with the same type is already running. To relaunch stop the first one and refresh until you can start a new workflow. The user experience here is not ideal yet (: Furthermore, there are currently no safeguards against launching mispecified workflows. 
 ![alt text](https://github.com/collinmelton/DDCloudServer/blob/master/InstructiveImages/Launcher.png "Launch Workflow")
 
 ## View Results and Monitor Performance
